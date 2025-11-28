@@ -1,0 +1,4 @@
+#ifndef CORE_MODEL_DEVICE_H
+#define CORE_MODEL_DEVICE_H
+
+#endif //CORE_MODEL_DEVICE_H

@@ -1,0 +1,8 @@
+#ifndef CORE_CRYPTO_CRYPTO_SERVICE_H
+#define CORE_CRYPTO_CRYPTO_SERVICE_H
+
+class CryptoService {
+
+};
+
+#endif //CORE_CRYPTO_CRYPTO_SERVICE_H

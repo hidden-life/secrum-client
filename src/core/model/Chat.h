@@ -1,0 +1,4 @@
+#ifndef CORE_MODEL_CHAT_H
+#define CORE_MODEL_CHAT_H
+
+#endif //CORE_MODEL_CHAT_H

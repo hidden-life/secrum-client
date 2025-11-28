@@ -1,0 +1,8 @@
+#ifndef CORE_NETWORK_HTTP_CLIENT_H
+#define CORE_NETWORK_HTTP_CLIENT_H
+
+class HttpClient {
+
+};
+
+#endif //CORE_NETWORK_HTTP_CLIENT_H

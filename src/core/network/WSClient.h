@@ -1,0 +1,8 @@
+#ifndef CORE_NETWORK_WSCLIENT_H
+#define CORE_NETWORK_WSCLIENT_H
+
+class WSClient {
+
+};
+
+#endif //CORE_NETWORK_WSCLIENT_H

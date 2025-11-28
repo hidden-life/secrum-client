@@ -1,0 +1,8 @@
+#ifndef CORE_DEVICE_DEVICE_SERVICE_H
+#define CORE_DEVICE_DEVICE_SERVICE_H
+
+class DeviceService {
+
+};
+
+#endif //CORE_DEVICE_DEVICE_SERVICE_H

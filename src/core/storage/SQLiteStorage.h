@@ -1,0 +1,8 @@
+#ifndef CORE_STORAGE_SQLITE_STORAGE_H
+#define CORE_STORAGE_SQLITE_STORAGE_H
+
+class SQLiteStorage {
+
+};
+
+#endif //CORE_STORAGE_SQLITE_STORAGE_H
