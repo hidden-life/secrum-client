@@ -1,13 +1,15 @@
 #include "Application.h"
+#include "AuthController.h"
+#include "ui/LoginWindow.h"
 
 #include <QMainWindow>
 
-Application::Application() {}
+Application::Application() {
+    m_authController = new AuthController();
+    m_loginWindow = new LoginWindow(m_authController);
+}
 
 
 void Application::start() {
-    auto *mainWnd = new QMainWindow();
-    mainWnd->setWindowTitle("SecRum (alpha))");
-    mainWnd->resize(400, 300);
-    mainWnd->show();
+    m_loginWindow->show();
 }

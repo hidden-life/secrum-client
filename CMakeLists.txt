@@ -16,11 +16,13 @@ find_package(Qt6 COMPONENTS
         Network
         REQUIRED)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
-file(GLOB_RECURSE HEADERS src/*.h)
-file(GLOB_RECURSE UI_FILES src/ui/*.ui)
+file(GLOB_RECURSE SOURCES
+        src/*.cpp
+        src/*.h
+        src/*.ui
+)
 
-add_executable(secrum ${SOURCES} ${HEADERS} ${UI_FILES})
+add_executable(secrum ${SOURCES})
 target_link_libraries(secrum
         Qt6::Core
         Qt6::Gui
