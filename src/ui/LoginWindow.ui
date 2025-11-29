@@ -6,13 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>176</width>
-    <height>160</height>
+    <width>300</width>
+    <height>240</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Secrum — Login</string>
   </property>
+
   <layout class="QVBoxLayout">
    <item>
     <widget class="QLabel" name="titleLabel">
@@ -26,24 +27,30 @@
       <string>Sign in to Secrum</string>
      </property>
      <property name="alignment">
-      <set>Qt::AlignmentFlag::AlignCenter</set>
+      <set>Qt::AlignCenter</set>
      </property>
     </widget>
    </item>
+
    <item>
     <widget class="QLineEdit" name="phoneLineEdit">
      <property name="placeholderText">
-      <string>Phone number</string>
+      <string>Phone number (ex: +380...)</string>
      </property>
     </widget>
    </item>
+
    <item>
     <widget class="QLineEdit" name="codeLineEdit">
      <property name="placeholderText">
       <string>Verification code</string>
      </property>
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
+
    <item>
     <widget class="QPushButton" name="sendCodeButton">
      <property name="text">
@@ -51,13 +58,32 @@
      </property>
     </widget>
    </item>
+
    <item>
     <widget class="QPushButton" name="loginButton">
      <property name="text">
       <string>Login</string>
      </property>
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
+
+   <item>
+    <widget class="QLabel" name="statusLabel">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="styleSheet">
+      <string>color: gray;</string>
+     </property>
+    </widget>
+   </item>
+
   </layout>
  </widget>
  <resources/>

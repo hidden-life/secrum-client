@@ -1,9 +1,9 @@
 #include "AuthController.h"
 
-bool AuthController::sendCode(const QString &phone) {
-    return !phone.trimmed().isEmpty();
+AuthController::AuthController(QObject *parent) : QObject(parent) {
+    m_authService = new AuthService(this);
 }
 
-bool AuthController::login(const QString &phone, const QString &code) {
-    return phone == "+380991001010" && code == "1234";
+AuthService * AuthController::service() {
+    return m_authService;
 }
