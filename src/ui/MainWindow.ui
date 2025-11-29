@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+    <class>MainWindow</class>
+    <widget class="QMainWindow" name="MainWindow">
+        <property name="windowTitle">
+            <string>Secrum</string>
+        </property>
+        <widget class="QWidget" name="centralWidget">
+            <layout class="QVBoxLayout">
+                <item>
+                    <widget class="QLabel" name="statusLabel">
+                        <property name="text">
+                            <string>Connected</string>
+                        </property>
+                        <property name="alignment">
+                            <set>Qt::AlignCenter</set>
+                        </property>
+                    </widget>
+                </item>
+            </layout>
+        </widget>
+    </widget>
+    <resources/>
+    <connections/>
+</ui>

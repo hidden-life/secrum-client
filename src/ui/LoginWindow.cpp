@@ -1,8 +1,8 @@
 #include "LoginWindow.h"
 #include "./ui_loginwindow.h"
 #include "app/AuthController.h"
-
-#include <QMessageBox>
+#include "MainWindow.h"
+#include "core/config/ClientConfiguration.h"
 
 LoginWindow::LoginWindow(QWidget *parent) :
     QWidget(parent), ui(new Ui::LoginWindow), m_authController(new AuthController(this)) {
@@ -28,9 +28,12 @@ LoginWindow::LoginWindow(QWidget *parent) :
         ui->statusLabel->setText("Error: " + err);
     });
 
-    connect(m_authController->service(), &AuthService::loginSuccess, this, [this](const QString) {
-        ui->statusLabel->setText("Success!");
-        emit loginCompleted();
+    connect(m_authController->service(), &AuthService::loginSuccess, this, [this](const QString &token) {
+        ClientConfiguration::instance().setAccessToken(token);
+        auto *mainWnd = new MainWindow(token);
+        mainWnd->show();
+
+        this->close();
     });
 }
 
