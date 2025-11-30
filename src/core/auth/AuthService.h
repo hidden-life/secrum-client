@@ -15,7 +15,7 @@ public:
 
 signals:
     void loginCodeSent();
-    void loginSuccess(QString accessToken);
+    void loginSuccess(QString accessToken, QString refreshToken);
     void loginError(QString msg);
 
 private:

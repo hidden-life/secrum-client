@@ -4,27 +4,75 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 
-HttpClient::HttpClient(QObject *parent) : QObject(parent) {}
+HttpClient::HttpClient(QObject *parent) : QObject(parent) {
+    m_baseUrl = QStringLiteral("http://localhost:8080"); // it will be in configuration later
+}
+
+void HttpClient::setBaseUrl(const QString &baseUrl) {
+    m_baseUrl = baseUrl;
+}
+
+void HttpClient::setAccessToken(const QString &accessToken) {
+    m_accessToken = accessToken;
+}
+
+void HttpClient::get(const QString &path) {
+    const QNetworkRequest request = makeRequest(path);
+    QNetworkReply *reply = m_manager.get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(reply);
+    });
+}
 
 void HttpClient::post(const QString &path, const QJsonObject &body) {
-    QNetworkRequest req(QUrl(m_baseUrl + path));
+    const QNetworkRequest request = makeRequest(path);
+    const QJsonDocument doc(body);
+    const QByteArray payload = doc.toJson(QJsonDocument::Compact);
+
+    QNetworkReply *reply = m_manager.post(request, payload);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(reply);
+    });
+}
+
+QNetworkRequest HttpClient::makeRequest(const QString &path) {
+    const QUrl url(m_baseUrl + path);
+    QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    auto payload = QJsonDocument(body).toJson();
-    auto * reply = m_manager.post(req, payload);
+    if (!m_accessToken.isEmpty()) {
+        const QByteArray headerValue = "Bearer " + m_accessToken.toUtf8();
+        req.setRawHeader("Authorization", headerValue);
+    }
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
-        QByteArray data = reply->readAll();
+    qDebug() << "[HTTP] Request: " << url;
+    qDebug() << "[HTTP] Access token: " << m_accessToken;
 
-        if (reply->error() != QNetworkReply::NoError) {
-            emit error(reply->errorString());
-            reply->deleteLater();
-            return;
-        }
+    return req;
+}
 
-        auto json = QJsonDocument::fromJson(data);
-        emit success(json.object());
+void HttpClient::handleReply(QNetworkReply *reply) {
+    reply->deleteLater();
 
-        reply->deleteLater();
-    });
+    if (reply->error() != QNetworkReply::NoError) {
+        emit error(reply->errorString());
+        return;
+    }
+
+    const QByteArray data = reply->readAll();
+    if (data.isEmpty()) {
+        emit success(QJsonDocument());
+        return;
+    }
+
+    QJsonParseError parseError;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
+    if (parseError.error != QJsonParseError::NoError) {
+        emit error(QStringLiteral("Failed to parse JSON: %1").arg(parseError.errorString()));
+        return;
+    }
+
+    emit success(doc);
 }

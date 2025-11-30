@@ -28,9 +28,9 @@ LoginWindow::LoginWindow(QWidget *parent) :
         ui->statusLabel->setText("Error: " + err);
     });
 
-    connect(m_authController->service(), &AuthService::loginSuccess, this, [this](const QString &token) {
+    connect(m_authController->service(), &AuthService::loginSuccess, this, [this](const QString &token, const QString &refreshToken) {
         ClientConfiguration::instance().setAccessToken(token);
-        auto *mainWnd = new MainWindow(token);
+        auto *mainWnd = new MainWindow(token, refreshToken);
         mainWnd->show();
 
         this->close();

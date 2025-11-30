@@ -3,15 +3,16 @@
 AuthService::AuthService(QObject *parent) : QObject(parent) {
     m_httpClient = new HttpClient(this);
 
-    connect(m_httpClient, &HttpClient::success, this, [this](QJsonObject json) {
+    connect(m_httpClient, &HttpClient::success, this, [this](const QJsonDocument &doc) {
+        QJsonObject json = doc.object();
         if (json.contains("request_id")) {
             m_requestId = json["request_id"].toString(); // save request_id
             emit loginCodeSent();
             return;
         }
 
-        if (json.contains("access_token")) {
-            emit loginSuccess(json["access_token"].toString());
+        if (json.contains("access_token") && json.contains("refresh_token")) {
+            emit loginSuccess(json["access_token"].toString(), json["refresh_token"].toString());
             return;
         }
     });
