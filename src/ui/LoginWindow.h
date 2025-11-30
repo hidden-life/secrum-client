@@ -14,15 +14,36 @@ class LoginWindow final : public QWidget {
 Q_OBJECT
 
 public:
-    explicit LoginWindow(QWidget *parent = nullptr);
+    explicit LoginWindow(AuthController *authController, QWidget *parent = nullptr);
     ~LoginWindow() override;
 
 signals:
-    void loginCompleted();
+    void loginCompleted(); // for Application
+
+private slots:
+    void onSendCodeClicked();
+    void onLoginClicked();
+
+    void onCodeSent(const QString &requestId, const QString &phone);
+    void onLoginSuccess();
+    void onLoginFailed(const QString &err);
 
 private:
-    Ui::LoginWindow *ui;
+    enum class State {
+        IDLE,
+        SendingCode,
+        CodeSent,
+        Verifying
+    };
+
+    Ui::LoginWindow *m_ui;
     AuthController *m_authController;
+    QString m_requestId;
+    QString m_phone;
+    State m_state = State::IDLE;
+
+    void setState(State state);
+    void setStatusMessage(const QString &message, bool isError);
 };
 
 

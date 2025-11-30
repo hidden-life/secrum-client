@@ -5,22 +5,28 @@
 
 #include "core/network/HttpClient.h"
 
+class HttpClient;
+
 class AuthService final : public QObject {
-Q_OBJECT
+    Q_OBJECT
 public:
     explicit AuthService(QObject *parent = nullptr);
-
+    // 1. code request
     void loginBegin(const QString &phone);
-    void verifyCode(const QString &code);
+    // 2. code confirmation
+    void verifyCode(const QString &requestId, const QString &phone, const QString &code);
 
 signals:
-    void loginCodeSent();
-    void loginSuccess(QString accessToken, QString refreshToken);
-    void loginError(QString msg);
+    // code sent. need a field to enter it
+    void codeSent(const QString &requestId, const QString &phone);
+    // login success (tokens are saved inside AuthSession)
+    void loginSuccess();
+    // any login error
+    void loginError(const QString &err);
 
 private:
     HttpClient *m_httpClient;
-    QString m_requestId;
+    QString m_lastPhone;
 };
 
 #endif //CORE_AUTH_AUTH_SERVICE_H

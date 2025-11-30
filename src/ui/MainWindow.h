@@ -13,19 +13,14 @@ class MainWindow final : public QMainWindow {
 Q_OBJECT
 
 public:
-    explicit MainWindow(const QString &accessToken, const QString &refreshToken, QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
-
-    QString accessToken() const;
 
 private slots:
     void openDevicesDialog();
 
 private:
-    Ui::MainWindow *ui;
-    QString m_accessToken;
-    QString m_refreshToken;
-
+    Ui::MainWindow *m_ui;
     DeviceService *m_deviceService = nullptr;
 
     void setupMenus();

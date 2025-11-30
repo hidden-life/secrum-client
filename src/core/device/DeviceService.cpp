@@ -1,7 +1,11 @@
 #include "DeviceService.h"
 #include "core/network/HttpClient.h"
+#include "core/storage/SQLiteStorage.h"
 
 #include <QJsonArray>
+#include <QUuid>
+
+#include "core/auth/AuthSession.h"
 
 DeviceService::DeviceService(QObject *parent) : QObject(parent) {
     m_httpClient = new HttpClient(this);
@@ -57,6 +61,18 @@ void DeviceService::deleteDevice(const QString &deviceId) {
     const QString path = QStringLiteral("/devices/%1").arg(deviceId);
 
     m_httpClient->post(path, QJsonObject{{"_method", "DELETE"}});
+}
+
+QString DeviceService::deviceId() {
+    QString id = AuthSession::instance().deviceId();
+    if (id.isEmpty()) {
+        return id;
+    }
+
+    QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    AuthSession::instance().setDeviceId(id);
+
+    return newId;
 }
 
 QVector<Device> DeviceService::parseDevices(const QJsonArray &arr) {

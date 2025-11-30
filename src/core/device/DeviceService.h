@@ -18,6 +18,8 @@ public:
     void deactivateDevice(const QString &deviceId);
     void deleteDevice(const QString &deviceId);
 
+    static QString deviceId();
+
 signals:
     void devicesLoaded(const QVector<Device> &devices);
     void requestFailed(const QString &msg);

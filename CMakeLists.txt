@@ -14,6 +14,7 @@ find_package(Qt6 COMPONENTS
         Gui
         Widgets
         Network
+        Sql
         REQUIRED)
 
 file(GLOB_RECURSE SOURCES
@@ -28,6 +29,7 @@ target_link_libraries(secrum
         Qt6::Gui
         Qt6::Widgets
         Qt6::Network
+        Qt6::Sql
 )
 
 target_include_directories(secrum PRIVATE src)

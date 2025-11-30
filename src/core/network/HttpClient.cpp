@@ -4,12 +4,11 @@
 #include <QJsonDocument>
 #include <QNetworkReply>
 
-HttpClient::HttpClient(QObject *parent) : QObject(parent) {
-    m_baseUrl = QStringLiteral("http://localhost:8080"); // it will be in configuration later
-}
+#include "core/auth/AuthSession.h"
+#include "core/config/ClientConfiguration.h"
 
-void HttpClient::setBaseUrl(const QString &baseUrl) {
-    m_baseUrl = baseUrl;
+HttpClient::HttpClient(QObject *parent) : QObject(parent) {
+    m_baseUrl = ClientConfiguration::instance().baseURL();
 }
 
 void HttpClient::setAccessToken(const QString &accessToken) {
@@ -42,13 +41,9 @@ QNetworkRequest HttpClient::makeRequest(const QString &path) {
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    if (!m_accessToken.isEmpty()) {
-        const QByteArray headerValue = "Bearer " + m_accessToken.toUtf8();
-        req.setRawHeader("Authorization", headerValue);
+    if (const QString token = AuthSession::instance().accessToken(); !token.isEmpty()) {
+        req.setRawHeader("Authorization", ("Bearer " + token).toUtf8());
     }
-
-    qDebug() << "[HTTP] Request: " << url;
-    qDebug() << "[HTTP] Access token: " << m_accessToken;
 
     return req;
 }

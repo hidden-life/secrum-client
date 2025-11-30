@@ -5,14 +5,27 @@ ClientConfiguration &ClientConfiguration::instance() {
     return instance;
 }
 
-void ClientConfiguration::setAccessToken(const QString &accessToken) {
-    m_accessToken = accessToken;
+QString ClientConfiguration::baseURL() const {
+    return m_baseURL;
 }
 
-QString ClientConfiguration::getAccessToken() const {
-    return m_accessToken;
+void ClientConfiguration::setBaseURL(const QString &url) {
+    m_baseURL = url;
 }
 
-bool ClientConfiguration::isAuthorized() const {
-    return !m_accessToken.isEmpty();
+QString ClientConfiguration::environment() const {
+    return m_environment;
+}
+
+void ClientConfiguration::setEnvironment(const QString &env) {
+    m_environment = env;
+}
+
+ClientConfiguration::ClientConfiguration() {
+}
+
+void ClientConfiguration::load() {
+}
+
+void ClientConfiguration::save() {
 }

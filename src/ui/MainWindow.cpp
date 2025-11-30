@@ -7,23 +7,18 @@
 
 #include "DeviceManagerDialog.h"
 
-MainWindow::MainWindow(const QString &accessToken, const QString &refreshToken ,QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow), m_accessToken(accessToken), m_refreshToken(refreshToken) {
-    ui->setupUi(this);
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent), m_ui(new Ui::MainWindow) {
+    m_ui->setupUi(this);
     setWindowTitle(tr("Secrum"));
 
     m_deviceService = new DeviceService(this);
-    m_deviceService->setAccessToken(accessToken);
 
     setupMenus();
 }
 
 MainWindow::~MainWindow() {
-    delete ui;
-}
-
-QString MainWindow::accessToken() const {
-    return m_accessToken;
+    delete m_ui;
 }
 
 void MainWindow::setupMenus() {

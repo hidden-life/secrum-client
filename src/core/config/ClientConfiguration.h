@@ -6,12 +6,19 @@ class ClientConfiguration {
 public:
     static ClientConfiguration &instance();
 
-    void setAccessToken(const QString &accessToken);
-    QString getAccessToken() const;
-    bool isAuthorized() const;
+    QString baseURL() const;
+    void setBaseURL(const QString &url);
+
+    QString environment() const;
+    void setEnvironment(const QString &env);
 
 private:
-    QString m_accessToken;
+    QString m_baseURL;
+    QString m_environment;
+
+    ClientConfiguration();
+    void load();
+    void save();
 };
 
 #endif //CORE_CONFIG_CLIENT_CONFIGURATION_H
