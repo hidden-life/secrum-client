@@ -1,5 +1,12 @@
 #include "ClientConfiguration.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonParseError>
+#include <QJsonObject>
+
 ClientConfiguration &ClientConfiguration::instance() {
     static ClientConfiguration instance;
     return instance;
@@ -25,7 +32,41 @@ ClientConfiguration::ClientConfiguration() {
 }
 
 void ClientConfiguration::load() {
+    loadDefaults(); // first we need to load default configuration
+
+    const QString path = QCoreApplication::applicationDirPath() + "/config/config.json";
+    qDebug() << QCoreApplication::applicationDirPath();
+    QFile file(path);
+    if (!file.exists()) {
+        qWarning() << "[CONFIG] client.json not found, using default configuration.";
+        return;
+    }
+
+    if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "[CONFIG] failed to open config file, using defaults.";
+        return;
+    }
+
+    QJsonParseError err{};
+    auto doc = QJsonDocument::fromJson(file.readAll(), &err);
+    if (err.error != QJsonParseError::NoError) {
+        qWarning() << "[CONFIG] parsing configuration JSON error: " << err.errorString();
+        return;
+    }
+
+    auto root = doc.object();
+    auto api = root["api"].toObject();
+
+    if (api.contains("base_url")) {
+        m_baseURL = api["base_url"].toString();
+    }
+
+    qDebug() << "[CONFIG] API base URL = " << m_baseURL;
 }
 
 void ClientConfiguration::save() {
+}
+
+void ClientConfiguration::loadDefaults() {
+    m_baseURL = "http://localhost:8080";
 }

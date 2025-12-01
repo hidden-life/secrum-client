@@ -12,13 +12,15 @@ public:
     QString environment() const;
     void setEnvironment(const QString &env);
 
+    void load();
+    void save();
+
 private:
     QString m_baseURL;
     QString m_environment;
 
     ClientConfiguration();
-    void load();
-    void save();
+    void loadDefaults();
 };
 
 #endif //CORE_CONFIG_CLIENT_CONFIGURATION_H

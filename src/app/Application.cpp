@@ -7,6 +7,7 @@
 
 #include "core/auth/AuthSession.h"
 #include "ui/MainWindow.h"
+#include "core/config/ClientConfiguration.h"
 
 Application::Application(QObject *parent) : QObject(parent) {
 }
@@ -15,7 +16,7 @@ Application::~Application() = default;
 
 int Application::start(int argc, char **argv) {
     QApplication app(argc, argv);
-
+    ClientConfiguration::instance().load();
     // config/HTTP/services
     m_authService = std::make_unique<AuthService>(&app);
     m_authController = std::make_unique<AuthController>(m_authService.get(), this);

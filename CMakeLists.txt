@@ -34,6 +34,9 @@ target_link_libraries(secrum
 
 target_include_directories(secrum PRIVATE src)
 
+# config
+file(COPY ${CMAKE_SOURCE_DIR}/config DESTINATION ${CMAKE_BINARY_DIR})
+
 # Platform specifics
 if (WIN32)
     target_compile_definitions(secrum PRIVATE PLATFORM_WINDOWS)
