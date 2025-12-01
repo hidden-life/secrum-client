@@ -46,3 +46,7 @@ void AuthSession::clear() {
     s.remove("access_token");
     s.remove("refresh_token");
 }
+
+bool AuthSession::isAuthenticated() const {
+    return !accessToken().isEmpty() && !userId().isEmpty();
+}

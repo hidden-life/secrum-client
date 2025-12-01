@@ -25,6 +25,9 @@ public:
     // clear
     void clear();
 
+    // check user is authenticated (simple helper)
+    bool isAuthenticated() const;
+
 private:
     AuthSession() = default;
 };
