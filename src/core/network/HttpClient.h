@@ -10,16 +10,23 @@ class HttpClient final : public QObject{
 Q_OBJECT
 public:
     explicit HttpClient(QObject *parent = nullptr);
-    void setBaseUrl(const QString &baseUrl);
     void setAccessToken(const QString &accessToken);
+    void clearAccessToken();
 
     void get(const QString &path);
     void post(const QString &path, const QJsonObject &body);
     void del(const QString &path);
 
 signals:
+    // success JSON-response
     void success(const QJsonDocument &doc);
+    // any HTTP error, instead of 401
     void error(const QString &message);
+    // signal that catches 401 error
+    void unauthorized();
+
+private slots:
+    void onReplyFinished(QNetworkReply *reply);
 
 private:
     QNetworkAccessManager m_manager;

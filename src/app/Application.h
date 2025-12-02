@@ -1,9 +1,7 @@
 #ifndef APP_APPLICATION_H
 #define APP_APPLICATION_H
 
-#include <QObject>
-#include <memory>
-
+#include "core/device/DeviceService.h"
 #include "core/network/ConnectivityService.h"
 
 class AuthController;
@@ -11,6 +9,7 @@ class LoginWindow;
 class AuthService;
 class MainWindow;
 class ConnectivityService;
+class DeviceService;
 
 class Application final : public QObject {
     Q_OBJECT
@@ -28,6 +27,7 @@ private:
     LoginWindow *m_loginWindow;
     MainWindow *m_mainWindow;
     AuthController *m_authController;
+    DeviceService *m_deviceService;
 
     ConnectivityService *m_connectivity = nullptr;
 

@@ -33,11 +33,27 @@ int Application::start(int argc, char **argv) {
     // config/HTTP/services
     m_authService = new AuthService(&app);
     m_authController = new AuthController(m_authService, this);
+    m_deviceService = new DeviceService(this);
 
     // check for active session
     const auto &session = AuthSession::instance();
-    if (!session.accessToken().isEmpty() && !session.userId().isEmpty()) {
-        showMainWindow();
+    connect(m_authService, &AuthService::loginSuccess, this, [this]() {
+        auto &sess = AuthSession::instance();
+        m_deviceService->setAccessToken(sess.accessToken());
+        if (!m_mainWindow) {
+            showMainWindow();
+        }
+    });
+
+    connect(m_authService, &AuthService::loginError, this, [this](const QString &err) {
+        qWarning() << "[AUTH] startup auth error: " << err;
+        if (!m_loginWindow) {
+            showLoginWindow();
+        }
+    });
+
+    if (!session.refreshToken().isEmpty()) {
+        m_authService->refreshSession();
     } else {
         showLoginWindow();
     }

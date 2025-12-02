@@ -15,6 +15,8 @@ public:
     void loginBegin(const QString &phone);
     // 2. code confirmation
     void verifyCode(const QString &requestId, const QString &phone, const QString &code);
+    // 3. refresh session
+    void refreshSession();
 
 signals:
     // code sent. need a field to enter it

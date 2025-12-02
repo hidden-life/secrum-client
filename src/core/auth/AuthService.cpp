@@ -7,7 +7,12 @@
 AuthService::AuthService(QObject *parent) : QObject(parent), m_httpClient(new HttpClient(this)) {
     // success HTTP-response
     connect(m_httpClient, &HttpClient::success, this, [this](const QJsonDocument &doc) {
-        QJsonObject json = doc.object();
+        if (!doc.isObject()) {
+            emit loginError("Unexpected auth response.");
+            return;
+        }
+
+        const QJsonObject json = doc.object();
         // if exists 'access_token' - it's '/auth/verify' response
         if (json.contains("access_token")) {
             const QString accessToken = json.value("access_token").toString();
@@ -24,6 +29,8 @@ AuthService::AuthService(QObject *parent) : QObject(parent), m_httpClient(new Ht
             if (!deviceId.isEmpty()) {
                 session.setDeviceId(deviceId);
             }
+
+            m_httpClient->setAccessToken(accessToken);
 
             emit loginSuccess();
             return;
@@ -65,4 +72,17 @@ void AuthService::verifyCode(const QString &requestId, const QString &phone, con
     body["platform"] = QSysInfo::prettyProductName();
 
     m_httpClient->post("/auth/verify", body);
+}
+
+void AuthService::refreshSession() {
+    const auto &session = AuthSession::instance();
+    const QString refresh = session.refreshToken();
+    if (refresh.isEmpty()) {
+        emit loginError("Missing refresh token.");
+        return;
+    }
+
+    QJsonObject body;
+    body["refresh_token"] = refresh;
+    m_httpClient->post("/auth/refresh", body);
 }

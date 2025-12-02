@@ -15,6 +15,10 @@ void HttpClient::setAccessToken(const QString &accessToken) {
     m_accessToken = accessToken;
 }
 
+void HttpClient::clearAccessToken() {
+    m_accessToken.clear();
+}
+
 void HttpClient::get(const QString &path) {
     const QNetworkRequest request = makeRequest(path);
     QNetworkReply *reply = m_manager.get(request);
@@ -43,6 +47,47 @@ void HttpClient::del(const QString &path) {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply);
     });
+}
+
+void HttpClient::onReplyFinished(QNetworkReply *reply) {
+    // reply ALWAYS should be deleted
+    reply->deleteLater();
+
+    // HTTP status
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+    // net errors (DNS, timeout etc.)
+    if (reply->error() != QNetworkReply::NoError) {
+        if (status == 401) {
+            emit unauthorized();
+            return;
+        }
+
+        emit error(reply->errorString());
+        return;
+    }
+
+    // status 401 without networkError
+    if (status == 401) {
+        emit unauthorized();
+        return;
+    }
+
+    const QByteArray data = reply->readAll();
+    if (data.isEmpty()) {
+        // empty JSON
+        emit success(QJsonDocument());
+        return;
+    }
+
+    QJsonParseError jsonErr{};
+    QJsonDocument doc = QJsonDocument::fromJson(data, &jsonErr);
+    if (jsonErr.error != QJsonParseError::NoError) {
+        emit error(QStringLiteral("Invalid JSON response: %1").arg(jsonErr.errorString()));
+        return;
+    }
+
+    emit success(doc);
 }
 
 QNetworkRequest HttpClient::makeRequest(const QString &path) {
