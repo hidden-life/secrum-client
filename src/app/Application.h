@@ -4,10 +4,13 @@
 #include <QObject>
 #include <memory>
 
+#include "core/network/ConnectivityService.h"
+
 class AuthController;
 class LoginWindow;
 class AuthService;
 class MainWindow;
+class ConnectivityService;
 
 class Application final : public QObject {
     Q_OBJECT
@@ -21,10 +24,12 @@ private slots:
     void onLoginSuccess();
 
 private:
-    std::unique_ptr<AuthService> m_authService;
-    std::unique_ptr<LoginWindow> m_loginWindow;
-    std::unique_ptr<MainWindow> m_mainWindow;
-    std::unique_ptr<AuthController> m_authController;
+    AuthService *m_authService;
+    LoginWindow *m_loginWindow;
+    MainWindow *m_mainWindow;
+    AuthController *m_authController;
+
+    ConnectivityService *m_connectivity = nullptr;
 
     void showLoginWindow();
     void showMainWindow();

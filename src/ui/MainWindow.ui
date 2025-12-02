@@ -5,6 +5,23 @@
         <property name="windowTitle">
             <string>Secrum</string>
         </property>
+        <widget class="QWidget" name="connectionBanner">
+            <property name="minimumHeight">
+                <number>28</number>
+            </property>
+            <property name="maximumHeight">
+                <number>28</number>
+            </property>
+            <layout class="QHBoxLayout">
+                <item>
+                    <widget class="QLabel" name="connectionLabel">
+                        <property name="text">
+                            <string>Connecting…</string>
+                        </property>
+                    </widget>
+                </item>
+            </layout>
+        </widget>
         <widget class="QWidget" name="centralWidget">
             <layout class="QVBoxLayout">
                 <item>

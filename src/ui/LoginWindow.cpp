@@ -12,7 +12,6 @@ LoginWindow::LoginWindow(AuthController *authController, QWidget *parent) :
 
     // initial state
     setState(State::IDLE);
-    setStatusMessage(QString(), false);
 
     connect(m_ui->sendCodeButton, &QPushButton::clicked, this, &LoginWindow::onSendCodeClicked);
     connect(m_ui->loginButton, &QPushButton::clicked, this, &LoginWindow::onLoginClicked);
@@ -28,11 +27,9 @@ LoginWindow::~LoginWindow() {
 void LoginWindow::onSendCodeClicked() {
     m_phone = m_ui->phoneLineEdit->text().trimmed();
     if (m_phone.isEmpty()) {
-        setStatusMessage("Enter phone number", true);
         return;
     }
 
-    setStatusMessage("Sending code...", false);
     setState(State::SendingCode);
 
     m_authController->login(m_phone);
@@ -40,17 +37,14 @@ void LoginWindow::onSendCodeClicked() {
 
 void LoginWindow::onLoginClicked() {
     if (m_requestId.isEmpty() || m_phone.isEmpty()) {
-        setStatusMessage("First, request a code", true);
         return;
     }
 
     const QString code = m_ui->codeLineEdit->text().trimmed();
     if (code.isEmpty()) {
-        setStatusMessage("Enter a verification code", true);
         return;
     }
 
-    setStatusMessage("Verifying a code...", false);
     setState(State::Verifying);
 
     m_authController->verify(m_requestId, m_phone, code);
@@ -60,26 +54,45 @@ void LoginWindow::onCodeSent(const QString &requestId, const QString &phone) {
     m_requestId = requestId;
     m_phone = phone;
 
-    setStatusMessage("Code sent. Check your SMS.", false);
     setState(State::CodeSent);
 
     m_ui->codeLineEdit->setFocus();
 }
 
 void LoginWindow::onLoginSuccess() {
-    setStatusMessage("Login successful", false);
     emit loginCompleted();
     close();
 }
 
 void LoginWindow::onLoginFailed(const QString &err) {
-    setStatusMessage(err, true);
 
     if (m_state == State::SendingCode) {
         setState(State::IDLE);
     } else if (m_state == State::Verifying) {
         setState(State::CodeSent);
     }
+}
+
+void LoginWindow::setConnectivity(ConnectivityService *svc) {
+    if (!svc) {
+        return;
+    }
+    m_connectivity = svc;
+
+    connect(svc, &ConnectivityService::stateChanged, this, [this](int state) {
+        bool isOnline = (state == ConnectivityService::State::Online);
+
+        m_ui->sendCodeButton->setEnabled(isOnline);
+        m_ui->loginButton->setEnabled(isOnline);
+
+        if (!isOnline) {
+            m_ui->errorLabel->setText("Waiting for connection...");
+            m_ui->errorLabel->show();
+        } else {
+            m_ui->errorLabel->clear();
+            m_ui->errorLabel->hide();
+        }
+    });
 }
 
 void LoginWindow::setState(State state) {
@@ -100,13 +113,4 @@ void LoginWindow::setState(State state) {
     m_ui->codeLineEdit->setEnabled(canEditCode);
     m_ui->loginButton->setEnabled(canLogin);
     m_ui->sendCodeButton->setEnabled(canSendCode);
-}
-
-void LoginWindow::setStatusMessage(const QString &message, bool isError) {
-    m_ui->statusLabel->setText(message);
-    if (isError) {
-        m_ui->statusLabel->setStyleSheet("color: red;");
-    } else {
-        m_ui->statusLabel->setStyleSheet("color: green;");
-    }
 }

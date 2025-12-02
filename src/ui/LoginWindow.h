@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include "app/AuthController.h"
+#include "core/network/ConnectivityService.h"
 
 class AuthController;
 
@@ -16,6 +17,8 @@ Q_OBJECT
 public:
     explicit LoginWindow(AuthController *authController, QWidget *parent = nullptr);
     ~LoginWindow() override;
+
+    void setConnectivity(ConnectivityService *svc);
 
 signals:
     void loginCompleted(); // for Application
@@ -41,9 +44,9 @@ private:
     QString m_requestId;
     QString m_phone;
     State m_state = State::IDLE;
+    ConnectivityService *m_connectivity = nullptr;
 
     void setState(State state);
-    void setStatusMessage(const QString &message, bool isError);
 };
 
 

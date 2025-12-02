@@ -6,20 +6,22 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>240</height>
+    <width>320</width>
+    <height>280</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Secrum — Login</string>
   </property>
 
-  <layout class="QVBoxLayout">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,1,0,0">
+
+   <!-- Title -->
    <item>
     <widget class="QLabel" name="titleLabel">
      <property name="font">
       <font>
-       <pointsize>14</pointsize>
+       <pointsize>16</pointsize>
        <bold>true</bold>
       </font>
      </property>
@@ -32,25 +34,52 @@
     </widget>
    </item>
 
+   <!-- Error Label -->
    <item>
-    <widget class="QLineEdit" name="phoneLineEdit">
-     <property name="placeholderText">
-      <string>Phone number (ex: +380...)</string>
+    <widget class="QLabel" name="errorLabel">
+     <property name="minimumHeight">
+      <number>24</number>
+     </property>
+     <property name="maximumHeight">
+      <number>24</number>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="visible">
+      <bool>false</bool>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="styleSheet">
+      <string>color: #d9534f;</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
 
+   <!-- Phone -->
+   <item>
+    <widget class="QLineEdit" name="phoneLineEdit">
+     <property name="placeholderText">
+      <string>Phone number</string>
+     </property>
+    </widget>
+   </item>
+
+   <!-- Code -->
    <item>
     <widget class="QLineEdit" name="codeLineEdit">
      <property name="placeholderText">
       <string>Verification code</string>
      </property>
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
 
+   <!-- Send Button -->
    <item>
     <widget class="QPushButton" name="sendCodeButton">
      <property name="text">
@@ -59,29 +88,28 @@
     </widget>
    </item>
 
+   <!-- Login Button -->
    <item>
     <widget class="QPushButton" name="loginButton">
      <property name="text">
       <string>Login</string>
      </property>
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
 
+   <!-- Spacer -->
    <item>
-    <widget class="QLabel" name="statusLabel">
-     <property name="text">
-      <string/>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
+     <property name="sizeHint">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
      </property>
-     <property name="styleSheet">
-      <string>color: gray;</string>
-     </property>
-    </widget>
+    </spacer>
    </item>
 
   </layout>

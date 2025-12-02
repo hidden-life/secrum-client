@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include "core/device/DeviceService.h"
+#include "core/network/ConnectivityService.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -16,6 +17,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
 
+    void setConnectivity(ConnectivityService *svc);
+
 private slots:
     void openDevicesDialog();
 
@@ -24,6 +27,7 @@ private:
     DeviceService *m_deviceService = nullptr;
 
     void setupMenus();
+    void updateConnectionStatus(int state);
 };
 
 
