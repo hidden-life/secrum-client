@@ -15,6 +15,7 @@ public:
 
     void get(const QString &path);
     void post(const QString &path, const QJsonObject &body);
+    void del(const QString &path);
 
 signals:
     void success(const QJsonDocument &doc);

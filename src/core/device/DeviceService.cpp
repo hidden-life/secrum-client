@@ -1,19 +1,16 @@
 #include "DeviceService.h"
 #include "core/network/HttpClient.h"
 #include "core/storage/SQLiteStorage.h"
+#include "core/auth/AuthSession.h"
 
 #include <QJsonArray>
 #include <QUuid>
 
-#include "core/auth/AuthSession.h"
-
-DeviceService::DeviceService(QObject *parent) : QObject(parent) {
-    m_httpClient = new HttpClient(this);
-
+DeviceService::DeviceService(QObject *parent) : QObject(parent), m_httpClient(new HttpClient(this)) {
     connect(m_httpClient, &HttpClient::success, this, [this](const QJsonDocument &doc) {
         if (doc.isArray()) {
             // response from GET /devices - array
-            QVector<Device> devices = parseDevices(doc.array());
+            const QVector<Device> devices = parseDevices(doc.array());
             emit devicesLoaded(devices);
         } else if (doc.isObject()) {
             // response: {"status": "ok"}
@@ -59,18 +56,20 @@ void DeviceService::deleteDevice(const QString &deviceId) {
     }
 
     const QString path = QStringLiteral("/devices/%1").arg(deviceId);
-
-    m_httpClient->post(path, QJsonObject{{"_method", "DELETE"}});
+    m_httpClient->del(path);
 }
 
 QString DeviceService::deviceId() {
-    QString id = AuthSession::instance().deviceId();
-    if (id.isEmpty()) {
+    auto &session = AuthSession::instance();
+
+    // if exists - return
+    if (const QString id = session.deviceId(); !id.isEmpty()) {
         return id;
     }
 
-    QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    AuthSession::instance().setDeviceId(id);
+    // first start on this app - generate new and save
+    const QString newId = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    session.setDeviceId(newId);
 
     return newId;
 }

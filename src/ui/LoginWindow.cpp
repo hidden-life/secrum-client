@@ -57,6 +57,9 @@ void LoginWindow::onCodeSent(const QString &requestId, const QString &phone) {
     setState(State::CodeSent);
 
     m_ui->codeLineEdit->setFocus();
+    m_ui->codeLineEdit->clear();
+    m_ui->errorLabel->clear();
+    m_ui->errorLabel->hide();
 }
 
 void LoginWindow::onLoginSuccess() {
@@ -65,11 +68,13 @@ void LoginWindow::onLoginSuccess() {
 }
 
 void LoginWindow::onLoginFailed(const QString &err) {
+    m_ui->errorLabel->setText(err);
+    m_ui->errorLabel->show();
 
-    if (m_state == State::SendingCode) {
-        setState(State::IDLE);
-    } else if (m_state == State::Verifying) {
+    if (!m_requestId.isEmpty()) {
         setState(State::CodeSent);
+    } else {
+        setState(State::IDLE);
     }
 }
 
@@ -95,22 +100,35 @@ void LoginWindow::setConnectivity(ConnectivityService *svc) {
     });
 }
 
-void LoginWindow::setState(State state) {
+void LoginWindow::setState(const State state) {
     m_state = state;
 
-    bool canEditPhone = (state == State::IDLE || state == State::CodeSent);
-    bool canEditCode = (state == State::IDLE || state == State::Verifying);
-    bool canSendCode = (state == State::IDLE || state == State::CodeSent);
-    bool canLogin = (state == State::CodeSent);
+    bool canEditPhone = false;
+    bool canEditCode = false;
+    bool canSendCode = false;
+    bool canLogin = false;
 
-    // block buttons during queries
-    if (state == State::SendingCode || state == State::Verifying) {
-        canSendCode = false;
-        canLogin = false;
+    switch (state) {
+        case State::IDLE:
+            canEditPhone = true;
+            canSendCode = true;
+            break;
+        case State::SendingCode:
+            // all fields are blocked
+            break;
+        case State::CodeSent:
+            canEditCode = true;
+            canEditPhone = true;
+            canSendCode = true;
+            canLogin = true;
+            break;
+        case State::Verifying:
+            // all is blocked
+            break;
     }
 
     m_ui->phoneLineEdit->setEnabled(canEditPhone);
     m_ui->codeLineEdit->setEnabled(canEditCode);
-    m_ui->loginButton->setEnabled(canLogin);
     m_ui->sendCodeButton->setEnabled(canSendCode);
+    m_ui->loginButton->setEnabled(canLogin);
 }

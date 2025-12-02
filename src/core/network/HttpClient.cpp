@@ -36,6 +36,15 @@ void HttpClient::post(const QString &path, const QJsonObject &body) {
     });
 }
 
+void HttpClient::del(const QString &path) {
+    auto req = makeRequest(path);
+    auto *reply = m_manager.deleteResource(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        handleReply(reply);
+    });
+}
+
 QNetworkRequest HttpClient::makeRequest(const QString &path) {
     const QUrl url(m_baseUrl + path);
     QNetworkRequest req(url);
