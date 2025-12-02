@@ -19,15 +19,8 @@ public:
 
     void setConnectivity(ConnectivityService *svc);
 
-private slots:
-    void openDevicesDialog();
-
 private:
     Ui::MainWindow *m_ui;
-    DeviceService *m_deviceService = nullptr;
-
-    void setupMenus();
-    void updateConnectionStatus(int state);
 };
 
 
