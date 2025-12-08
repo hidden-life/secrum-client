@@ -5,6 +5,7 @@
 #include <QNetworkReply>
 
 #include "core/auth/AuthSession.h"
+#include "core/auth/TokenRefresher.h"
 #include "core/config/ClientConfiguration.h"
 
 HttpClient::HttpClient(QObject *parent) : QObject(parent) {
@@ -20,6 +21,7 @@ void HttpClient::clearAccessToken() {
 }
 
 void HttpClient::get(const QString &path) {
+    m_pending = {"GET", path, {}};
     const QNetworkRequest request = makeRequest(path);
     QNetworkReply *reply = m_manager.get(request);
 
@@ -29,6 +31,7 @@ void HttpClient::get(const QString &path) {
 }
 
 void HttpClient::post(const QString &path, const QJsonObject &body) {
+    m_pending = {"POST", path, body};
     const QNetworkRequest request = makeRequest(path);
     const QJsonDocument doc(body);
     const QByteArray payload = doc.toJson(QJsonDocument::Compact);
@@ -41,11 +44,27 @@ void HttpClient::post(const QString &path, const QJsonObject &body) {
 }
 
 void HttpClient::del(const QString &path) {
+    m_pending = {"DELETE", path, {}};
     auto req = makeRequest(path);
     auto *reply = m_manager.deleteResource(req);
 
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         handleReply(reply);
+    });
+}
+
+void HttpClient::setRefresher(TokenRefresher *refresher) {
+    m_refresher = refresher;
+
+    connect(m_refresher, &TokenRefresher::refreshSuccess, this, [this]() {
+        setAccessToken(AuthSession::instance().accessToken());
+        if (m_retryCallback) {
+            m_retryCallback();
+        }
+    });
+
+    connect(m_refresher, &TokenRefresher::refreshFailed, this, [this](const QString &err) {
+        emit error("Session expired. Please login again.");
     });
 }
 
@@ -95,31 +114,61 @@ QNetworkRequest HttpClient::makeRequest(const QString &path) {
     QNetworkRequest req(url);
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    if (const QString token = AuthSession::instance().accessToken(); !token.isEmpty()) {
-        req.setRawHeader("Authorization", ("Bearer " + token).toUtf8());
+    if (!path.contains("/auth/refresh")) {
+        if (const QString token = AuthSession::instance().accessToken(); !token.isEmpty()) {
+            req.setRawHeader("Authorization", ("Bearer " + token).toUtf8());
+        }
     }
 
     return req;
 }
 
 void HttpClient::handleReply(QNetworkReply *reply) {
-    reply->deleteLater();
+    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    if (status == 401) {
+        reply->deleteLater();
+
+        if (!m_refresher) {
+            emit unauthorized();
+            return;
+        }
+
+        qDebug() << "[HTTP] Access token expired, attempting refresh: " << reply->errorString();
+
+        m_retryCallback = [this, reply]() {
+            const auto &p = m_pending;
+
+            if (p.method == "GET") {
+                this->get(p.path);
+            } else if (p.method == "POST") {
+                this->post(p.path, p.body);
+            } else if (p.method == "DELETE") {
+                this->del(p.path);
+            }
+        };
+
+        m_refresher->refresh();
+        return;
+    }
 
     if (reply->error() != QNetworkReply::NoError) {
         emit error(reply->errorString());
+        reply->deleteLater();
         return;
     }
 
     const QByteArray data = reply->readAll();
+    reply->deleteLater();
+
     if (data.isEmpty()) {
         emit success(QJsonDocument());
         return;
     }
 
-    QJsonParseError parseError;
-    QJsonDocument doc = QJsonDocument::fromJson(data, &parseError);
-    if (parseError.error != QJsonParseError::NoError) {
-        emit error(QStringLiteral("Failed to parse JSON: %1").arg(parseError.errorString()));
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError) {
+        emit error("Invalid JSON.");
         return;
     }
 

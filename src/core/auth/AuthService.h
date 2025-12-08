@@ -17,6 +17,8 @@ public:
     void verifyCode(const QString &requestId, const QString &phone, const QString &code);
     // 3. refresh session
     void refreshSession();
+    [[nodiscard]]
+    HttpClient *httpClient() const { return m_httpClient; };
 
 signals:
     // code sent. need a field to enter it

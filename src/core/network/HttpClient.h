@@ -5,6 +5,15 @@
 #include <QString>
 #include <QNetworkAccessManager>
 #include <QJsonObject>
+#include <functional>
+
+class TokenRefresher;
+
+struct PendingRequest {
+    QString method;
+    QString path;
+    QJsonObject body;
+};
 
 class HttpClient final : public QObject{
 Q_OBJECT
@@ -16,6 +25,8 @@ public:
     void get(const QString &path);
     void post(const QString &path, const QJsonObject &body);
     void del(const QString &path);
+
+    void setRefresher(TokenRefresher *refresher);
 
 signals:
     // success JSON-response
@@ -32,6 +43,13 @@ private:
     QNetworkAccessManager m_manager;
     QString m_baseUrl;
     QString m_accessToken;
+
+    TokenRefresher *m_refresher = nullptr;
+    QNetworkReply *m_pendingReply = nullptr;
+
+    std::function<void()> m_retryCallback;
+
+    PendingRequest m_pending;
 
     QNetworkRequest makeRequest(const QString &path);
     void handleReply(QNetworkReply *reply);

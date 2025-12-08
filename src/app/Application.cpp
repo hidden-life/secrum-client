@@ -6,6 +6,7 @@
 #include <QApplication>
 
 #include "core/auth/AuthSession.h"
+#include "core/auth/TokenRefresher.h"
 #include "ui/MainWindow.h"
 #include "core/config/ClientConfiguration.h"
 #include "core/network/ConnectivityService.h"
@@ -34,6 +35,9 @@ int Application::start(int argc, char **argv) {
     m_authService = new AuthService(&app);
     m_authController = new AuthController(m_authService, this);
     m_deviceService = new DeviceService(this);
+
+    auto refresher = new TokenRefresher(m_authService->httpClient(), this);
+    m_authService->httpClient()->setRefresher(refresher);
 
     // check for active session
     const auto &session = AuthSession::instance();
