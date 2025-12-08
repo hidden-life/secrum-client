@@ -21,6 +21,18 @@ public:
 
 private:
     Ui::MainWindow *m_ui;
+
+    enum class Mode {
+        None,
+        Chats,
+        Settings,
+    };
+
+    Mode m_mode = Mode::None;
+
+    void switchMode(Mode mode);
+    void updateHeader();
+    void updateLeftPanel();
 };
 
 

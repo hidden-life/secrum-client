@@ -11,27 +11,23 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), m_ui(new Ui::MainWindow) {
     m_ui->setupUi(this);
 
-    m_ui->pagesStack->setCurrentWidget(m_ui->pageChats);
-
-    connect(m_ui->chatsButton, &QPushButton::clicked, this, [this]() {
-        m_ui->pagesStack->setCurrentWidget(m_ui->pageChats);
-        m_ui->currentSectionLabel->setText("Chats");
+    connect(m_ui->chatsToolButton, &QToolButton::clicked, this, [this]() {
+        switchMode(Mode::Chats);
     });
 
-    connect(m_ui->usersButton, &QPushButton::clicked, this, [this]() {
-        m_ui->pagesStack->setCurrentWidget(m_ui->pageUsers);
-        m_ui->currentSectionLabel->setText("Users");
+    connect(m_ui->settingsToolButton, &QToolButton::clicked, this, [this]() {
+        switchMode(Mode::Settings);
     });
 
-    connect(m_ui->devicesButton, &QPushButton::clicked, this, [this]() {
-        m_ui->pagesStack->setCurrentWidget(m_ui->pageDevices);
-        m_ui->currentSectionLabel->setText("Devices");
+    connect(m_ui->listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem *) {
+        if (m_mode == Mode::Chats) {
+            m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
+        } else {
+            m_ui->stackWidget->setCurrentWidget(m_ui->defaultPage);
+        }
     });
 
-    connect(m_ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        m_ui->pagesStack->setCurrentWidget(m_ui->pageSettings);
-        m_ui->currentSectionLabel->setText("Settings");
-    });
+    switchMode(Mode::Chats);
 }
 
 MainWindow::~MainWindow() {
@@ -47,7 +43,38 @@ void MainWindow::setConnectivity(ConnectivityService *svc) {
             m_ui->statusLabel->setStyleSheet("color: #4caf50;");
         } else {
             m_ui->statusLabel->setText("Offline");
-            m_ui->statusLabel->setStyleSheet("color: f44336;");
+            m_ui->statusLabel->setStyleSheet("color: #f44336;");
         }
     });
+}
+
+void MainWindow::switchMode(const Mode mode) {
+    if (m_mode == mode) return;
+
+    m_mode = mode;
+    updateHeader();
+    updateLeftPanel();
+
+    m_ui->stackWidget->setCurrentWidget(m_ui->defaultPage);
+}
+
+void MainWindow::updateHeader() {
+    m_ui->chatsToolButton->setChecked(m_mode == Mode::Chats);
+    m_ui->settingsToolButton->setChecked(m_mode == Mode::Settings);
+}
+
+void MainWindow::updateLeftPanel() {
+    m_ui->listWidget->clear();
+
+    if (m_mode == Mode::Chats) {
+        m_ui->searchLineEdit->setPlaceholderText("Search chats...");
+        m_ui->listWidget->addItem("Alice");
+        m_ui->listWidget->addItem("Bob");
+        m_ui->listWidget->addItem("Work Group");
+    } else {
+        m_ui->searchLineEdit->setPlaceholderText("Search settings...");
+        m_ui->listWidget->addItem("Profile");
+        m_ui->listWidget->addItem("Devices");
+        m_ui->listWidget->addItem("Security");
+    }
 }
