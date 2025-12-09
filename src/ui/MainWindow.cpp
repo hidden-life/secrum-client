@@ -28,6 +28,14 @@ MainWindow::MainWindow(QWidget *parent) :
     });
 
     switchMode(Mode::Chats);
+
+    m_chatService = new ChatService(this);
+
+    connect(m_chatService, &ChatService::chatsLoaded, this, &MainWindow::renderChats);
+    connect(m_chatService, &ChatService::requestFailed, this, [](QString err) {
+        qDebug() << "[CHAT ERROR] " << err;
+    });
+    m_chatService->fetchChats();
 }
 
 MainWindow::~MainWindow() {
@@ -76,5 +84,27 @@ void MainWindow::updateLeftPanel() {
         m_ui->listWidget->addItem("Profile");
         m_ui->listWidget->addItem("Devices");
         m_ui->listWidget->addItem("Security");
+    }
+}
+
+void MainWindow::renderChats(const QVector<Chat> &chats) {
+    m_ui->listWidget->clear();
+
+    for (const Chat &chat : chats) {
+        QString title = chat.displayName.isEmpty() ? chat.peerUserId : chat.displayName;
+        if (chat.unreadCount > 0) {
+            title += QString(" (%1)").arg(chat.unreadCount);
+        }
+
+        auto *item = new QListWidgetItem(title);
+        if (chat.isPinned) {
+            item->setBackground(Qt::yellow);
+        }
+
+        if (chat.isMuted) {
+            item->setForeground(Qt::gray);
+        }
+
+        m_ui->listWidget->addItem(item);
     }
 }

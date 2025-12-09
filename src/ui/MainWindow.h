@@ -5,6 +5,7 @@
 
 #include "core/device/DeviceService.h"
 #include "core/network/ConnectivityService.h"
+#include "core/chat/ChatService.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,6 +22,7 @@ public:
 
 private:
     Ui::MainWindow *m_ui;
+    ChatService *m_chatService = nullptr;
 
     enum class Mode {
         None,
@@ -33,6 +35,9 @@ private:
     void switchMode(Mode mode);
     void updateHeader();
     void updateLeftPanel();
+
+private slots:
+    void renderChats(const QVector<Chat> &chats);
 };
 
 
