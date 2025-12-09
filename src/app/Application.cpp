@@ -9,6 +9,7 @@
 #include "core/auth/TokenRefresher.h"
 #include "ui/MainWindow.h"
 #include "core/config/ClientConfiguration.h"
+#include "core/crypto/CryptoService.h"
 #include "core/network/ConnectivityService.h"
 
 Application::Application(QObject *parent) : QObject(parent) {
@@ -19,6 +20,8 @@ Application::~Application() = default;
 int Application::start(int argc, char **argv) {
     QApplication app(argc, argv);
     ClientConfiguration::instance().load();
+
+    CryptoService::instance().init();
 
     // connectivity check
     m_connectivity = new ConnectivityService(this);

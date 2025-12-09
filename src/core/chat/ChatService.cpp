@@ -1,4 +1,5 @@
 #include "ChatService.h"
+#include "core/crypto/CryptoService.h"
 
 #include <QJsonArray>
 
@@ -21,6 +22,8 @@ void ChatService::fetchChats() {
 
 QVector<Chat> ChatService::parse(const QJsonArray &arr) {
     QVector<Chat> chats;
+    auto &cryptoService = CryptoService::instance();
+
     for (const auto &val : arr) {
         if (!val.isObject()) {
             continue;
@@ -30,7 +33,8 @@ QVector<Chat> ChatService::parse(const QJsonArray &arr) {
         Chat c;
         c.peerUserId = obj["peer_user_id"].toString();
         c.displayName = obj["peer_display_name"].toString();
-        c.lastCipherText = obj["last_cipher_text"].toString();
+        const QString lastCipherText = obj["last_cipher- text"].toString();
+        c.lastCipherText = cryptoService.decryptForChat(c.peerUserId, lastCipherText);
         c.lastMessageAt = obj["last_message_at"].toString();
         c.unreadCount = obj["unread_count"].toInt();
         c.isPinned = obj["is_pinned"].toBool();
