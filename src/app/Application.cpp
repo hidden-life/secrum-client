@@ -21,7 +21,10 @@ int Application::start(int argc, char **argv) {
     QApplication app(argc, argv);
     ClientConfiguration::instance().load();
 
-    CryptoService::instance().init();
+    if (!CryptoService::instance().init()) {
+        qWarning() << "[FATAL] Crypto initialization failed.";
+        return EXIT_FAILURE;
+    }
 
     // connectivity check
     m_connectivity = new ConnectivityService(this);

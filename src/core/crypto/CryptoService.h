@@ -8,21 +8,16 @@ class CryptoService final : public QObject{
 public:
     static CryptoService &instance();
 
-    void init();
-    bool isReady() const;
+    bool init();
 
-    QString encryptForChat(const QString &peerUserId, const QString &plainText);
-    QString decryptForChat(const QString &peerUserId, const QString &cipherText);
+    QString encryptForChat(const QString &id, const QString &peerUserId, const QString &plainText);
+    QString decryptForChat(const QString &id, const QString &peerUserId, const QString &cipherText);
 
 private:
+    bool m_isReady = false;
+
     explicit CryptoService(QObject *parent = nullptr);
-    CryptoService(const CryptoService &) = delete;
-    CryptoService &operator=(const CryptoService &) = delete;
-
-    QByteArray m_masterKey;
-    bool m_initialized = false;
-
-    void loadOrCreateMasterKey();
+    QByteArray deriveKey(const QString &id, const QString &peerUserId) const;
 };
 
 #endif //CORE_CRYPTO_CRYPTO_SERVICE_H

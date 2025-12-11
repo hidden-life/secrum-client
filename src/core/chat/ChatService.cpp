@@ -3,6 +3,8 @@
 
 #include <QJsonArray>
 
+#include "core/auth/AuthSession.h"
+
 ChatService::ChatService(QObject *parent) : QObject(parent), m_httpClient(new HttpClient(this)) {
     connect(m_httpClient, &HttpClient::success, this, [this](const QJsonDocument &doc) {
         if (!doc.isArray()) {
@@ -22,7 +24,10 @@ void ChatService::fetchChats() {
 
 QVector<Chat> ChatService::parse(const QJsonArray &arr) {
     QVector<Chat> chats;
+    chats.reserve(arr.size());
+
     auto &cryptoService = CryptoService::instance();
+    const QString uid = AuthSession::instance().userId();
 
     for (const auto &val : arr) {
         if (!val.isObject()) {
@@ -33,8 +38,8 @@ QVector<Chat> ChatService::parse(const QJsonArray &arr) {
         Chat c;
         c.peerUserId = obj["peer_user_id"].toString();
         c.displayName = obj["peer_display_name"].toString();
-        const QString lastCipherText = obj["last_cipher- text"].toString();
-        c.lastCipherText = cryptoService.decryptForChat(c.peerUserId, lastCipherText);
+        const QString lastCipherText = obj["last_cipher_text"].toString();
+        c.lastCipherText = cryptoService.decryptForChat(uid, c.peerUserId, lastCipherText);
         c.lastMessageAt = obj["last_message_at"].toString();
         c.unreadCount = obj["unread_count"].toInt();
         c.isPinned = obj["is_pinned"].toBool();
