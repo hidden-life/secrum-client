@@ -1,11 +1,12 @@
 #include "MainWindow.h"
 #include "./ui_mainwindow.h"
 
-#include <QMenu>
 #include <QMenuBar>
-#include <QAction>
+#include <QStatusBar>
+#include <QFont>
 
-#include "DeviceManagerDialog.h"
+#include "core/auth/AuthSession.h"
+#include "core/crypto/CryptoService.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent), m_ui(new Ui::MainWindow) {
@@ -19,23 +20,41 @@ MainWindow::MainWindow(QWidget *parent) :
         switchMode(Mode::Settings);
     });
 
-    connect(m_ui->listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem *) {
+    connect(m_ui->listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
         if (m_mode == Mode::Chats) {
-            m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
+            const QString peerId = item->data(Qt::UserRole).toString();
+            openChat(peerId);
         } else {
             m_ui->stackWidget->setCurrentWidget(m_ui->defaultPage);
         }
     });
 
-    switchMode(Mode::Chats);
-
     m_chatService = new ChatService(this);
+    m_msgService = new MessageService(this);
 
-    connect(m_chatService, &ChatService::chatsLoaded, this, &MainWindow::renderChats);
-    connect(m_chatService, &ChatService::requestFailed, this, [](QString err) {
-        qDebug() << "[CHAT ERROR] " << err;
+    connect(m_chatService, &ChatService::chatsLoaded, this, &MainWindow::onChatsLoaded);
+    connect(m_chatService, &ChatService::requestFailed, this, &MainWindow::onChatRequestFailed);
+
+    connect(m_ui->sendButton, &QPushButton::clicked, this, [this]() {
+        const QString text = m_ui->messageEdit->toPlainText().trimmed();
+        if (text.isEmpty()) {
+            return;
+        }
+
+        const auto *item = m_ui->listWidget->currentItem();
+        if (!item) return;
+
+        const QString peerId = item->data(Qt::UserRole).toString();
+        m_msgService->sendMessage(peerId, text);
+        m_ui->messageEdit->clear();
     });
-    m_chatService->fetchChats();
+
+    connect(m_msgService, &MessageService::messageAdded, this, [this](const Message &msg) {
+        QString status = "⏳";
+        m_ui->messageView->append(QString("<b>You:</b %1 %2").arg(msg.plainText).arg((status)));
+    });
+
+    switchMode(Mode::Chats);
 }
 
 MainWindow::~MainWindow() {
@@ -61,7 +80,12 @@ void MainWindow::switchMode(const Mode mode) {
 
     m_mode = mode;
     updateHeader();
-    updateLeftPanel();
+    if (m_mode == Mode::Chats) {
+        updateLeftPanelChats();
+        m_chatService->fetchChats();
+    } else {
+        updateLeftPanelSettings();
+    }
 
     m_ui->stackWidget->setCurrentWidget(m_ui->defaultPage);
 }
@@ -71,40 +95,57 @@ void MainWindow::updateHeader() {
     m_ui->settingsToolButton->setChecked(m_mode == Mode::Settings);
 }
 
-void MainWindow::updateLeftPanel() {
+void MainWindow::updateLeftPanelChats() {
+    m_ui->searchLineEdit->setPlaceholderText("Search chats...");
     m_ui->listWidget->clear();
-
-    if (m_mode == Mode::Chats) {
-        m_ui->searchLineEdit->setPlaceholderText("Search chats...");
-        m_ui->listWidget->addItem("Alice");
-        m_ui->listWidget->addItem("Bob");
-        m_ui->listWidget->addItem("Work Group");
-    } else {
-        m_ui->searchLineEdit->setPlaceholderText("Search settings...");
-        m_ui->listWidget->addItem("Profile");
-        m_ui->listWidget->addItem("Devices");
-        m_ui->listWidget->addItem("Security");
-    }
 }
 
-void MainWindow::renderChats(const QVector<Chat> &chats) {
+void MainWindow::updateLeftPanelSettings() {
+    m_ui->searchLineEdit->setPlaceholderText("Search settings...");
     m_ui->listWidget->clear();
 
+    m_ui->listWidget->addItem("Profile");
+    m_ui->listWidget->addItem("Devices");
+    m_ui->listWidget->addItem("Security");
+}
+
+void MainWindow::openChat(const QString &peerId) {
+    m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
+}
+
+void MainWindow::onChatsLoaded(const QVector<Chat> &chats) {
+    m_chats = chats;
+    m_ui->listWidget->clear();
+
+    const QString uid = AuthSession::instance().userId();
+    auto &crypto = CryptoService::instance();
+
     for (const Chat &chat : chats) {
-        QString title = chat.displayName.isEmpty() ? chat.peerUserId : chat.displayName;
+        auto *item = new QListWidgetItem();
+
+        const QString title = chat.displayName.isEmpty() ? chat.peerUserId : chat.displayName;
+        QString preview = "No messages yet.";
+        if (!chat.lastCipherText.isEmpty()) {
+            preview = crypto.decryptForChat(uid, chat.peerUserId, chat.lastCipherText);
+        }
+
         if (chat.unreadCount > 0) {
-            title += QString(" (%1)").arg(chat.unreadCount);
+            preview = QStringLiteral("(%1) %2").arg(chat.unreadCount).arg(preview);
         }
 
-        auto *item = new QListWidgetItem(title);
+        item->setText(title + "\n" + preview);
+        item->setData(Qt::UserRole, chat.peerUserId);
+
         if (chat.isPinned) {
-            item->setBackground(Qt::yellow);
-        }
-
-        if (chat.isMuted) {
-            item->setForeground(Qt::gray);
+            QFont f = item->font();
+            f.setBold(true);
+            item->setFont(f);
         }
 
         m_ui->listWidget->addItem(item);
     }
+}
+
+void MainWindow::onChatRequestFailed(const QString &msg) {
+    statusBar()->showMessage("Failed to load chats: " + msg, 5000);
 }

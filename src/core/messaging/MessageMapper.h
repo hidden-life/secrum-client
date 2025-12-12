@@ -1,0 +1,8 @@
+#ifndef MESSAGING_MESSAGE_MAPPER_H
+#define MESSAGING_MESSAGE_MAPPER_H
+
+class MessageMapper {
+
+};
+
+#endif //MESSAGING_MESSAGE_MAPPER_H

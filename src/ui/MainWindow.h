@@ -6,6 +6,7 @@
 #include "core/device/DeviceService.h"
 #include "core/network/ConnectivityService.h"
 #include "core/chat/ChatService.h"
+#include "core/messaging/MessageService.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -31,13 +32,20 @@ private:
     };
 
     Mode m_mode = Mode::None;
+    QVector<Chat> m_chats;
+    MessageService *m_msgService = nullptr;
 
     void switchMode(Mode mode);
     void updateHeader();
-    void updateLeftPanel();
+
+    void updateLeftPanelChats();
+    void updateLeftPanelSettings();
+
+    void openChat(const QString &peerId);
 
 private slots:
-    void renderChats(const QVector<Chat> &chats);
+    void onChatsLoaded(const QVector<Chat> &chats);
+    void onChatRequestFailed(const QString &msg);
 };
 
 
