@@ -3,6 +3,7 @@
 
 #include "core/device/DeviceService.h"
 #include "core/network/ConnectivityService.h"
+#include "core/network/WSClient.h"
 
 class AuthController;
 class LoginWindow;
@@ -31,8 +32,13 @@ private:
 
     ConnectivityService *m_connectivity = nullptr;
 
+    WSClient *m_wsClient = nullptr;
+
     void showLoginWindow();
     void showMainWindow();
+
+    void startRealtime();
+    void stopRealtime();
 };
 
 #endif //APP_APPLICATION_H

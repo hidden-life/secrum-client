@@ -7,8 +7,9 @@
 
 #include "core/auth/AuthSession.h"
 #include "core/crypto/CryptoService.h"
+#include "core/network/WSClient.h"
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
     QMainWindow(parent), m_ui(new Ui::MainWindow) {
     m_ui->setupUi(this);
 
@@ -30,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) :
     });
 
     m_chatService = new ChatService(this);
-    m_msgService = new MessageService(this);
+    m_msgService = new MessageService(wsClient, this);
 
     connect(m_chatService, &ChatService::chatsLoaded, this, &MainWindow::onChatsLoaded);
     connect(m_chatService, &ChatService::requestFailed, this, &MainWindow::onChatRequestFailed);
@@ -50,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
     });
 
     connect(m_msgService, &MessageService::messageAdded, this, [this](const Message &msg) {
-        QString status = "⏳";
+        const QString status = "⏳";
         m_ui->messageView->append(QString("<b>You:</b %1 %2").arg(msg.plainText).arg((status)));
     });
 

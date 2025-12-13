@@ -67,6 +67,17 @@ void ClientConfiguration::load() {
 void ClientConfiguration::save() {
 }
 
+QUrl ClientConfiguration::wsUrl() const {
+    const QUrl url(m_baseURL);
+    const QString scheme = url.scheme().toLower() == "https" ? "wss" : "ws";
+    QUrl ws;
+    ws.setScheme(scheme);
+    ws.setHost(url.host());
+    ws.setPath("/ws");
+
+    return ws;
+}
+
 void ClientConfiguration::loadDefaults() {
     m_baseURL = "http://localhost:8080";
 }

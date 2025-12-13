@@ -1,6 +1,7 @@
 #ifndef CORE_CONFIG_CLIENT_CONFIGURATION_H
 #define CORE_CONFIG_CLIENT_CONFIGURATION_H
 #include <QString>
+#include <QUrl>
 
 class ClientConfiguration {
 public:
@@ -14,6 +15,8 @@ public:
 
     void load();
     void save();
+
+    QUrl wsUrl() const;
 
 private:
     QString m_baseURL;

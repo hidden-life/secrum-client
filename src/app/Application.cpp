@@ -53,6 +53,8 @@ int Application::start(int argc, char **argv) {
         if (!m_mainWindow) {
             showMainWindow();
         }
+
+        startRealtime();
     });
 
     connect(m_authService, &AuthService::loginError, this, [this](const QString &err) {
@@ -101,7 +103,11 @@ void Application::showLoginWindow() {
 
 void Application::showMainWindow() {
     if (!m_mainWindow) {
-        m_mainWindow = new MainWindow();
+        if (!m_wsClient) {
+            return;
+        }
+
+        m_mainWindow = new MainWindow(m_wsClient);
         if (m_connectivity) {
             m_mainWindow->setConnectivity(m_connectivity);
         }
@@ -114,4 +120,35 @@ void Application::showMainWindow() {
     m_mainWindow->show();
     m_mainWindow->raise();
     m_mainWindow->activateWindow();
+}
+
+void Application::startRealtime() {
+    if (!m_wsClient) {
+        m_wsClient = new WSClient(this);
+
+        connect(m_wsClient, &WSClient::connected, this, []() {
+            qDebug() << "[WS] connected.";
+        });
+
+        connect(m_wsClient, &WSClient::disconnected, this, []() {
+            qDebug() << "[WS] disconnected.";
+        });
+
+        connect(m_wsClient, &WSClient::errorOccurred, this, [](const QString &err) {
+            qWarning() << "[WS] error: " << err;
+        });
+
+        connect(m_wsClient, &WSClient::eventReceived, this, [](const QString &type, const QJsonObject &json) {
+            qDebug() << "[WS] eventReceived: " << type << "=" << json;
+        });
+    }
+
+    const QUrl wsUrl = ClientConfiguration::instance().wsUrl();
+    m_wsClient->connectToHost(wsUrl);
+}
+
+void Application::stopRealtime() {
+    if (m_wsClient) {
+        m_wsClient->disconnectFromHost();
+    }
 }

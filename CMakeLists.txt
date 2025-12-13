@@ -15,6 +15,7 @@ find_package(Qt6 COMPONENTS
         Widgets
         Network
         Sql
+        WebSockets
         REQUIRED)
 
 file(GLOB_RECURSE SOURCES
@@ -41,6 +42,7 @@ target_link_libraries(secrum
         Qt6::Widgets
         Qt6::Network
         Qt6::Sql
+        Qt6::WebSockets
 
         sodium
 )

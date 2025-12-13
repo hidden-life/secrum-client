@@ -24,4 +24,26 @@ struct Message {
     QDateTime createdAt;
 };
 
+inline QString toString(MessageStatus status) {
+    switch (status) {
+        case MessageStatus::Sending: return "sending";
+        case MessageStatus::Sent: return "sent";
+        case MessageStatus::Delivered: return "delivered";
+        case MessageStatus::Read: return "read";
+        case MessageStatus::Failed: return "failed";
+    }
+
+    return "unknown";
+}
+
+inline MessageStatus fromString(const QString &str) {
+    if (str == "sending") return MessageStatus::Sending;
+    if (str == "sent") return MessageStatus::Sent;
+    if (str == "delivered") return MessageStatus::Delivered;
+    if (str == "read") return MessageStatus::Read;
+    if (str == "failed") return MessageStatus::Failed;
+
+    return MessageStatus::Failed;
+}
+
 #endif //CORE_MODEL_MESSAGE_H
