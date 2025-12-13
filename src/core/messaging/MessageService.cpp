@@ -1,9 +1,11 @@
 #include "MessageService.h"
 
+#include <QJsonArray>
+
 #include "core/auth/AuthSession.h"
 #include "core/crypto/CryptoService.h"
 
-MessageService::MessageService(WSClient *wsClient, QObject *parent) : QObject(parent), m_wsClient(wsClient) {
+MessageService::MessageService(WSClient *wsClient, QObject *parent) : QObject(parent), m_wsClient(wsClient), m_httpClient(new HttpClient(this)) {
     connect(wsClient, &WSClient::eventReceived, this, &MessageService::handleIncoming);
 }
 
@@ -28,13 +30,30 @@ void MessageService::sendMessage(const QString &peerUserId, const QString &text)
     body["recipient_user_id"] = peerUserId;
     body["cipher_text"] = msg.cipherText;
 
-    m_wsClient->send("message", body);
+    // m_wsClient->send("message", body);
+    m_httpClient->post("/messages/send", body);
 }
 
 void MessageService::markDelivered(const QString &msgId) {
+    if (!m_messages.contains(msgId)) {
+        return;
+    }
+
+    QJsonObject body;
+    body["delivered"] = QJsonArray{ msgId };
+
+    m_wsClient->send("ack_delivered", body);
 }
 
 void MessageService::markRead(const QString &msgId) {
+    if (!m_messages.contains(msgId)) {
+        return;
+    }
+
+    QJsonObject body;
+    body["read"] = QJsonArray{ msgId };
+
+    m_wsClient->send("ack_read", body);
 }
 
 void MessageService::handleIncoming(const QString &type, const QJsonObject &json) {
@@ -54,14 +73,12 @@ void MessageService::handleIncoming(const QString &type, const QJsonObject &json
 
         emit messageAdded(msg);
 
-        QJsonObject ack;
-        ack["message_id"] = msg.id;
-        m_wsClient->send("ack_delivered", ack);
+        markDelivered(msg.id);
 
         return;
     }
 
-    if (type == "ack_delivered") {
+    if (type == "message:delivered") {
         if (const QString id = json["message_id"].toString(); m_messages.contains(id)) {
             Message &msg = m_messages[id];
             msg.status = MessageStatus::Delivered;
@@ -71,7 +88,7 @@ void MessageService::handleIncoming(const QString &type, const QJsonObject &json
         }
     }
 
-    if (type == "ack_read") {
+    if (type == "message:read") {
         const QString id = json["message_id"].toString();
         if (!m_messages.contains(id)) {
             return;

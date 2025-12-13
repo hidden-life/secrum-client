@@ -24,6 +24,7 @@ signals:
 private:
     WSClient *m_wsClient;
     QHash<QString, Message> m_messages;
+    HttpClient *m_httpClient;
 
     void handleIncoming(const QString &type, const QJsonObject &json);
 };
