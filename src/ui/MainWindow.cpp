@@ -21,10 +21,9 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
         switchMode(Mode::Settings);
     });
 
-    connect(m_ui->listWidget, &QListWidget::itemClicked, this, [this](QListWidgetItem *item) {
+    connect(m_ui->listWidget, &QListWidget::itemClicked, this, [this](const QListWidgetItem *item) {
         if (m_mode == Mode::Chats) {
-            const QString peerId = item->data(Qt::UserRole).toString();
-            openChat(peerId);
+            openChat(item->data(Qt::UserRole).toString());
         } else {
             m_ui->stackWidget->setCurrentWidget(m_ui->defaultPage);
         }
@@ -54,6 +53,17 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
         const QString status = "⏳";
         m_ui->messageView->append(QString("<b>You:</b %1 %2").arg(msg.plainText).arg((status)));
     });
+
+    m_userSearchService = new UserSearchService(this);
+    // search by typing
+    connect(m_ui->searchLineEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+        if (m_mode == Mode::Chats) {
+            m_userSearchService->search(text);
+        }
+    });
+
+    // result
+    connect(m_userSearchService, &UserSearchService::searchCompleted, this, &MainWindow::onSearchResults);
 
     switchMode(Mode::Chats);
 }
@@ -111,6 +121,8 @@ void MainWindow::updateLeftPanelSettings() {
 }
 
 void MainWindow::openChat(const QString &peerId) {
+    m_currentPeerUserId = peerId;
+    m_ui->messageView->clear();
     m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
 }
 
@@ -149,4 +161,21 @@ void MainWindow::onChatsLoaded(const QVector<Chat> &chats) {
 
 void MainWindow::onChatRequestFailed(const QString &msg) {
     statusBar()->showMessage("Failed to load chats: " + msg, 5000);
+}
+
+void MainWindow::onSearchResults(const QVector<UserSearchResult> &results) {
+    m_ui->listWidget->clear();
+
+    for (const auto &u : results) {
+        auto *item = new QListWidgetItem();
+        QString title = u.displayName;
+        if (!u.username.isEmpty()) {
+            title += QString(" (@%1)").arg(u.username);
+        }
+
+        item->setText(title);
+        item->setData(Qt::UserRole, u.userId);
+
+        m_ui->listWidget->addItem(item);
+    }
 }

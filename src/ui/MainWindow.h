@@ -7,6 +7,7 @@
 #include "core/network/ConnectivityService.h"
 #include "core/chat/ChatService.h"
 #include "core/messaging/MessageService.h"
+#include "core/users/UserSearchService.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -35,6 +36,9 @@ private:
     QVector<Chat> m_chats;
     MessageService *m_msgService = nullptr;
 
+    QString m_currentPeerUserId;
+    UserSearchService *m_userSearchService = nullptr;
+
     void switchMode(Mode mode);
     void updateHeader();
 
@@ -46,6 +50,7 @@ private:
 private slots:
     void onChatsLoaded(const QVector<Chat> &chats);
     void onChatRequestFailed(const QString &msg);
+    void onSearchResults(const QVector<UserSearchResult> &results);
 };
 
 
