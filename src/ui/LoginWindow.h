@@ -2,6 +2,8 @@
 #define UI_LOGIN_WINDOW_H
 
 #include <QWidget>
+
+#include "DeviceManagerDialog.h"
 #include "app/AuthController.h"
 #include "core/network/ConnectivityService.h"
 
@@ -11,7 +13,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class LoginWindow; }
 QT_END_NAMESPACE
 
-class LoginWindow final : public QWidget {
+class LoginWindow final : public QDialog {
 Q_OBJECT
 
 public:

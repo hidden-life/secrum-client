@@ -9,4 +9,6 @@ struct UserSearchResult {
     QString username;
 };
 
+Q_DECLARE_METATYPE(UserSearchResult)
+
 #endif //CORE_MODEL_USER_SEARCH_RESULT_H

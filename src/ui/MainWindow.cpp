@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "./ui_mainwindow.h"
+#include "NewChatDialog.h"
 
 #include <QMenuBar>
 #include <QStatusBar>
@@ -65,6 +66,20 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
     // result
     connect(m_userSearchService, &UserSearchService::searchCompleted, this, &MainWindow::onSearchResults);
 
+    // new chat
+    connect(m_ui->newChatToolButton, &QToolButton::clicked, this, [this]() {
+        auto *newChatDialog = new NewChatDialog(this);
+        connect(newChatDialog, &NewChatDialog::userSelected, this, [this](const UserSearchResult &u) {
+            // add to chats if not exists
+            addChaIfMissing(u);
+
+            // open chat
+            openChat(u.userId);
+        });
+
+        newChatDialog->exec();
+    });
+
     switchMode(Mode::Chats);
 }
 
@@ -124,6 +139,21 @@ void MainWindow::openChat(const QString &peerId) {
     m_currentPeerUserId = peerId;
     m_ui->messageView->clear();
     m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
+}
+
+void MainWindow::addChaIfMissing(const UserSearchResult &u) {
+    for (const auto &c : m_chats) {
+        if (c.peerUserId == u.userId) {
+            return;
+        }
+    }
+
+    Chat chat;
+    chat.peerUserId = u.userId;
+    chat.displayName = u.displayName;
+
+    m_chats.prepend(chat);
+    onChatsLoaded(m_chats);
 }
 
 void MainWindow::onChatsLoaded(const QVector<Chat> &chats) {

@@ -5,7 +5,7 @@
 #include "core/config/ClientConfiguration.h"
 
 LoginWindow::LoginWindow(AuthController *authController, QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     m_ui(new Ui::LoginWindow),
     m_authController(authController) {
     m_ui->setupUi(this);

@@ -19,20 +19,24 @@ public:
     ~Application();
 
     int start(int argc, char **argv);
+    [[nodiscard]]
+    WSClient *wsClient() const { return m_wsClient; }
 
 private slots:
     void onLoginSuccess();
 
 private:
     AuthService *m_authService;
-    LoginWindow *m_loginWindow;
-    MainWindow *m_mainWindow;
+    LoginWindow *m_loginWindow = nullptr;
+    MainWindow *m_mainWindow = nullptr;
     AuthController *m_authController;
     DeviceService *m_deviceService;
 
     ConnectivityService *m_connectivity = nullptr;
 
     WSClient *m_wsClient = nullptr;
+
+    bool m_isRealtimeStarted = false;
 
     void showLoginWindow();
     void showMainWindow();

@@ -27,7 +27,7 @@ void ConnectivityService::check() {
 }
 
 void ConnectivityService::setState(State s) {
-    if (m_state != s) {
+    if (m_state == s) {
         return;
     }
 

@@ -4,6 +4,7 @@
 
 #include <QMainWindow>
 #include <QApplication>
+#include <QPointer>
 
 #include "core/auth/AuthSession.h"
 #include "core/auth/TokenRefresher.h"
@@ -11,6 +12,7 @@
 #include "core/config/ClientConfiguration.h"
 #include "core/crypto/CryptoService.h"
 #include "core/network/ConnectivityService.h"
+#include "core/model/UserSearchResult.h"
 
 Application::Application(QObject *parent) : QObject(parent) {
 }
@@ -19,7 +21,13 @@ Application::~Application() = default;
 
 int Application::start(int argc, char **argv) {
     QApplication app(argc, argv);
+
     ClientConfiguration::instance().load();
+    // create WS client
+    m_wsClient = new WSClient(nullptr);
+
+    qRegisterMetaType<UserSearchResult>("UserSearchResult");
+    qRegisterMetaType<QVector<UserSearchResult>>("QVector<UserSearchResult>");
 
     if (!CryptoService::instance().init()) {
         qWarning() << "[FATAL] Crypto initialization failed.";
@@ -51,10 +59,9 @@ int Application::start(int argc, char **argv) {
         auto &sess = AuthSession::instance();
         m_deviceService->setAccessToken(sess.accessToken());
         if (!m_mainWindow) {
+            startRealtime();
             showMainWindow();
         }
-
-        startRealtime();
     });
 
     connect(m_authService, &AuthService::loginError, this, [this](const QString &err) {
@@ -123,27 +130,31 @@ void Application::showMainWindow() {
 }
 
 void Application::startRealtime() {
-    if (!m_wsClient) {
-        m_wsClient = new WSClient(this);
-
-        connect(m_wsClient, &WSClient::connected, this, []() {
-            qDebug() << "[WS] connected.";
-        });
-
-        connect(m_wsClient, &WSClient::disconnected, this, []() {
-            qDebug() << "[WS] disconnected.";
-        });
-
-        connect(m_wsClient, &WSClient::errorOccurred, this, [](const QString &err) {
-            qWarning() << "[WS] error: " << err;
-        });
-
-        connect(m_wsClient, &WSClient::eventReceived, this, [](const QString &type, const QJsonObject &json) {
-            qDebug() << "[WS] eventReceived: " << type << "=" << json;
-        });
+    if (!m_wsClient || m_isRealtimeStarted) {
+        return;
     }
 
-    const QUrl wsUrl = ClientConfiguration::instance().wsUrl();
+    m_isRealtimeStarted = true;
+
+    connect(m_wsClient, &WSClient::connected, this, []() {
+        qDebug() << "[WS] connected.";
+    });
+
+    connect(m_wsClient, &WSClient::disconnected, this, []() {
+        qDebug() << "[WS] disconnected.";
+    });
+
+    connect(m_wsClient, &WSClient::errorOccurred, this, [](const QString &err) {
+        qWarning() << "[WS] error: " << err;
+    });
+
+    connect(m_wsClient, &WSClient::eventReceived, this, [](const QString &type, const QJsonObject &json) {
+        qDebug() << "[WS] eventReceived: " << type << "=" << json;
+    });
+
+    QUrl wsUrl = ClientConfiguration::instance().wsUrl();
+    qDebug() << "[WS] base url=" << ClientConfiguration::instance().wsUrl();
+    qDebug() << "[WS] access token length=" << AuthSession::instance().accessToken().size();
     m_wsClient->connectToHost(wsUrl);
 }
 

@@ -1,0 +1,8 @@
+#ifndef CORE_USERS_CONTACT_SERVICE_H
+#define CORE_USERS_CONTACT_SERVICE_H
+
+class ContactService {
+
+};
+
+#endif //CORE_USERS_CONTACT_SERVICE_H

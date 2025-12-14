@@ -1,5 +1,6 @@
 #include "WSClient.h"
 
+#include <QCoreApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QJsonObject>

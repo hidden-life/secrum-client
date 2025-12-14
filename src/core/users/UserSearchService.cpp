@@ -1,6 +1,7 @@
 #include "UserSearchService.h"
 
 #include <QJsonDocument>
+#include <QUrlQuery>
 
 UserSearchService::UserSearchService(QObject *parent) : QObject(parent), m_httpClient(new HttpClient(this)) {
     connect(m_httpClient, &HttpClient::success, this, [this](const QJsonDocument &doc) {
@@ -23,10 +24,16 @@ UserSearchService::UserSearchService(QObject *parent) : QObject(parent), m_httpC
 }
 
 void UserSearchService::search(const QString &query) {
-    if (query.trimmed().isEmpty()) {
+    const QString q = query.trimmed();
+    if (q.isEmpty()) {
         emit searchCompleted({});
         return;
     }
 
-    m_httpClient->get("/users/search?q=" + query);
+    QUrl url("/users/search");
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem("q", q);
+    url.setQuery(urlQuery);
+
+    m_httpClient->get(url.toString(QUrl::FullyEncoded));
 }
