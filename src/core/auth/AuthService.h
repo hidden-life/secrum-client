@@ -20,6 +20,8 @@ public:
     [[nodiscard]]
     HttpClient *httpClient() const { return m_httpClient; };
 
+    void logout();
+
 signals:
     // code sent. need a field to enter it
     void codeSent(const QString &requestId, const QString &phone);

@@ -74,3 +74,5 @@ gcov/
 *.gcda
 *.gcno
 coverage/
+
+libsodium

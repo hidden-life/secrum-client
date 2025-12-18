@@ -30,10 +30,13 @@ void UserSearchService::search(const QString &query) {
         return;
     }
 
-    QUrl url("/users/search");
+    QUrl url;
+    url.setPath("/users/search");
     QUrlQuery urlQuery;
     urlQuery.addQueryItem("q", q);
     url.setQuery(urlQuery);
 
-    m_httpClient->get(url.toString(QUrl::FullyEncoded));
+    const QString path = QString::fromUtf8(url.toEncoded(QUrl::FullyEncoded));
+
+    m_httpClient->get(path);
 }

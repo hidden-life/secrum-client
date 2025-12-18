@@ -47,12 +47,15 @@ private:
 
     void openChat(const QString &peerId);
 
-    void addChaIfMissing(const UserSearchResult &u);
+    void addChatIfMissing(const UserSearchResult &u);
 
 private slots:
     void onChatsLoaded(const QVector<Chat> &chats);
     void onChatRequestFailed(const QString &msg);
     void onSearchResults(const QVector<UserSearchResult> &results);
+
+signals:
+    void logoutRequested();
 };
 
 

@@ -86,3 +86,7 @@ void AuthService::refreshSession() {
     body["refresh_token"] = refresh;
     m_httpClient->post("/auth/refresh", body);
 }
+
+void AuthService::logout() {
+    m_httpClient->post("/auth/logout", {});
+}

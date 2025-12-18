@@ -71,13 +71,18 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
         auto *newChatDialog = new NewChatDialog(this);
         connect(newChatDialog, &NewChatDialog::userSelected, this, [this](const UserSearchResult &u) {
             // add to chats if not exists
-            addChaIfMissing(u);
+            addChatIfMissing(u);
 
             // open chat
             openChat(u.userId);
         });
 
         newChatDialog->exec();
+    });
+
+    connect(m_ui->profileToolButton, &QToolButton::clicked, this, [this]() {
+        qDebug() << "Logout requested from main window!";
+        emit logoutRequested();
     });
 
     switchMode(Mode::Chats);
@@ -141,7 +146,7 @@ void MainWindow::openChat(const QString &peerId) {
     m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
 }
 
-void MainWindow::addChaIfMissing(const UserSearchResult &u) {
+void MainWindow::addChatIfMissing(const UserSearchResult &u) {
     for (const auto &c : m_chats) {
         if (c.peerUserId == u.userId) {
             return;

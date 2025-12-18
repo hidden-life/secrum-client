@@ -24,6 +24,7 @@ public:
 
 private slots:
     void onLoginSuccess();
+    void logout();
 
 private:
     AuthService *m_authService;

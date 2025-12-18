@@ -115,6 +115,9 @@ void Application::showMainWindow() {
         }
 
         m_mainWindow = new MainWindow(m_wsClient);
+
+        connect(m_mainWindow, &MainWindow::logoutRequested, this, &Application::logout);
+
         if (m_connectivity) {
             m_mainWindow->setConnectivity(m_connectivity);
         }
@@ -162,4 +165,18 @@ void Application::stopRealtime() {
     if (m_wsClient) {
         m_wsClient->disconnectFromHost();
     }
+}
+
+void Application::logout() {
+    stopRealtime();
+
+    AuthSession::instance().clear();
+
+    if (m_mainWindow) {
+        m_mainWindow->close();
+        m_mainWindow->deleteLater();
+        m_mainWindow = nullptr;
+    }
+
+    showLoginWindow();
 }
