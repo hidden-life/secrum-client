@@ -50,15 +50,6 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
 
         m_msgService->sendMessage(m_currentPeerUserId, text);
         m_ui->messageEdit->clear();
-
-        // const auto *item = m_ui->listWidget->currentItem();
-        // if (!item) return;
-        //
-        // const QString peerId = item->data(Qt::UserRole).toString();
-        // // qDebug() << "peerId = " << peerId;
-        // // qDebug() << "message = " << text;
-        // m_msgService->sendMessage(peerId, text);
-        // m_ui->messageEdit->clear();
     });
 
     connect(m_msgService, &MessageService::messageAdded, this, [this](const Message &msg) {
@@ -98,6 +89,27 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
     connect(m_ui->profileToolButton, &QToolButton::clicked, this, [this]() {
         qDebug() << "Logout requested from main window!";
         emit logoutRequested();
+    });
+
+    connect(m_msgService, &MessageService::historyLoaded, this, [this](const QString &peerId, const QVector<Message> &messages) {
+        if (peerId != m_currentPeerUserId) {
+            return;
+        }
+
+        m_ui->messageView->clear();
+
+        for (const auto &msg : messages) {
+            const QString who = msg.isOutgoing ? "You" : "Peer";
+            m_ui->messageView->append(QString("<b>%1:</b> %2").arg(who, msg.plainText));
+        }
+    });
+
+    connect(m_msgService, &MessageService::historyFailed, this, [this](const QString &peerId, const QString &err) {
+        if (peerId != m_currentPeerUserId) {
+            return;
+        }
+
+        m_ui->messageView->append(QString("<i>History load failed: %1</i>").arg(err));
     });
 
     switchMode(Mode::Chats);
@@ -156,17 +168,27 @@ void MainWindow::updateLeftPanelSettings() {
 }
 
 void MainWindow::openChat(const QString &peerId) {
+    if (peerId.isEmpty()) {
+        return;
+    }
+
+    if (m_currentPeerUserId == peerId && m_ui->stackWidget->currentWidget() == m_ui->chatPage) {
+        return;
+    }
+
     m_currentPeerUserId = peerId;
     m_ui->messageView->clear();
     m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
 
-    for (int i = 0; i < m_ui->listWidget->count(); ++i) {
-        auto *it = m_ui->listWidget->item(i);
-        if (it && it->data(Qt::UserRole).toString() == peerId) {
-            m_ui->listWidget->setCurrentItem(it);
-            break;
-        }
-    }
+    // for (int i = 0; i < m_ui->listWidget->count(); ++i) {
+    //     auto *it = m_ui->listWidget->item(i);
+    //     if (it && it->data(Qt::UserRole).toString() == peerId) {
+    //         m_ui->listWidget->setCurrentItem(it);
+    //         break;
+    //     }
+    // }
+    m_msgService->loadHistory(peerId, 50);
+    m_msgService->markAllReadForPeer(peerId);
 }
 
 void MainWindow::addChatIfMissing(const UserSearchResult &u) {
