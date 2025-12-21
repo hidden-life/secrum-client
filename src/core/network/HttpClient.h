@@ -36,9 +36,6 @@ signals:
     // signal that catches 401 error
     void unauthorized();
 
-private slots:
-    void onReplyFinished(QNetworkReply *reply);
-
 private:
     QNetworkAccessManager m_manager;
     QString m_baseUrl;

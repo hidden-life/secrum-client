@@ -27,6 +27,10 @@ private:
     HttpClient *m_httpClient;
 
     void handleIncoming(const QString &type, const QJsonObject &json);
+
+private slots:
+    void onHttpSuccess(const QJsonDocument &doc);
+    void onHttpError(const QString &err);
 };
 
 #endif //CORE_MESSAGING_MESSAGE_SERVICE_H

@@ -68,50 +68,10 @@ void HttpClient::setRefresher(TokenRefresher *refresher) {
     });
 }
 
-void HttpClient::onReplyFinished(QNetworkReply *reply) {
-    // reply ALWAYS should be deleted
-    reply->deleteLater();
-
-    // HTTP status
-    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    // net errors (DNS, timeout etc.)
-    if (reply->error() != QNetworkReply::NoError) {
-        if (status == 401) {
-            emit unauthorized();
-            return;
-        }
-
-        emit error(reply->errorString());
-        return;
-    }
-
-    // status 401 without networkError
-    if (status == 401) {
-        emit unauthorized();
-        return;
-    }
-
-    const QByteArray data = reply->readAll();
-    if (data.isEmpty()) {
-        // empty JSON
-        emit success(QJsonDocument());
-        return;
-    }
-
-    QJsonParseError jsonErr{};
-    QJsonDocument doc = QJsonDocument::fromJson(data, &jsonErr);
-    if (jsonErr.error != QJsonParseError::NoError) {
-        emit error(QStringLiteral("Invalid JSON response: %1").arg(jsonErr.errorString()));
-        return;
-    }
-
-    emit success(doc);
-}
-
 QNetworkRequest HttpClient::makeRequest(const QString &path) {
     const QUrl url(m_baseUrl + path);
     QNetworkRequest req(url);
+    qDebug() << "URL = " << url;
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
     if (!path.contains("/auth/refresh")) {
@@ -125,50 +85,55 @@ QNetworkRequest HttpClient::makeRequest(const QString &path) {
 
 void HttpClient::handleReply(QNetworkReply *reply) {
     const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if (status == 401) {
-        reply->deleteLater();
+    const QByteArray data = reply->readAll();
+    reply->deleteLater();
 
+    // 401
+    if (status == 401) {
         if (!m_refresher) {
             emit unauthorized();
             return;
         }
 
-        qDebug() << "[HTTP] Access token expired, attempting refresh: " << reply->errorString();
-
-        m_retryCallback = [this, reply]() {
+        qDebug() << "[HTTP] 401, attempting refresh.";
+        m_retryCallback = [this] {
             const auto &p = m_pending;
-
-            if (p.method == "GET") {
-                this->get(p.path);
-            } else if (p.method == "POST") {
-                this->post(p.path, p.body);
-            } else if (p.method == "DELETE") {
-                this->del(p.path);
-            }
+            if (p.method == "GET") this->get(p.path);
+            else if (p.method == "POST") this->post(p.path, p.body);
+            else if (p.method == "DELETE") this->del(p.path);
         };
 
         m_refresher->refresh();
         return;
     }
 
+    // network shutdown or something else
     if (reply->error() != QNetworkReply::NoError) {
         emit error(reply->errorString());
-        reply->deleteLater();
         return;
     }
 
-    const QByteArray data = reply->readAll();
-    reply->deleteLater();
-
-    if (data.isEmpty()) {
-        emit success(QJsonDocument());
-        return;
+    // parse body
+    QJsonDocument doc;
+    if (!data.isEmpty()) {
+        QJsonParseError jsonErr{};
+        doc = QJsonDocument::fromJson(data, &jsonErr);
+        if (jsonErr.error != QJsonParseError::NoError) {
+            emit error(QStringLiteral("Invalid JSON response: %1").arg(jsonErr.errorString()));
+            return;
+        }
     }
 
-    QJsonParseError err;
-    const QJsonDocument doc = QJsonDocument::fromJson(data, &err);
-    if (err.error != QJsonParseError::NoError) {
-        emit error("Invalid JSON.");
+    if (status < 200 || status >= 300) {
+        QString msg = QString("HTTP %1").arg(status);
+        if (doc.isObject()) {
+            const auto obj = doc.object();
+            if (obj.contains("error")) {
+                msg = obj.value("error").toString();
+            }
+        }
+
+        emit error(msg);
         return;
     }
 

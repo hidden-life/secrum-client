@@ -73,6 +73,7 @@ QUrl ClientConfiguration::wsUrl() const {
     QUrl ws;
     ws.setScheme(scheme);
     ws.setHost(url.host());
+    ws.setPort(url.port());
     ws.setPath("/ws");
 
     return ws;

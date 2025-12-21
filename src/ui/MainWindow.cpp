@@ -37,22 +37,37 @@ MainWindow::MainWindow(WSClient *wsClient, QWidget *parent) :
     connect(m_chatService, &ChatService::requestFailed, this, &MainWindow::onChatRequestFailed);
 
     connect(m_ui->sendButton, &QPushButton::clicked, this, [this]() {
+        qDebug() << "SEND BUTTON CLICKED!";
         const QString text = m_ui->messageEdit->toPlainText().trimmed();
         if (text.isEmpty()) {
             return;
         }
 
-        const auto *item = m_ui->listWidget->currentItem();
-        if (!item) return;
+        if (m_currentPeerUserId.isEmpty()) {
+            statusBar()->showMessage("Select a chat first.", 3000);
+            return;
+        }
 
-        const QString peerId = item->data(Qt::UserRole).toString();
-        m_msgService->sendMessage(peerId, text);
+        m_msgService->sendMessage(m_currentPeerUserId, text);
         m_ui->messageEdit->clear();
+
+        // const auto *item = m_ui->listWidget->currentItem();
+        // if (!item) return;
+        //
+        // const QString peerId = item->data(Qt::UserRole).toString();
+        // // qDebug() << "peerId = " << peerId;
+        // // qDebug() << "message = " << text;
+        // m_msgService->sendMessage(peerId, text);
+        // m_ui->messageEdit->clear();
     });
 
     connect(m_msgService, &MessageService::messageAdded, this, [this](const Message &msg) {
         const QString status = "⏳";
         m_ui->messageView->append(QString("<b>You:</b %1 %2").arg(msg.plainText).arg((status)));
+    });
+
+    connect(m_msgService, &MessageService::messageFailed, this, [this](const QString&, const QString &reason) {
+        statusBar()->showMessage("Send failed: " + reason, 5000);
     });
 
     m_userSearchService = new UserSearchService(this);
@@ -144,6 +159,14 @@ void MainWindow::openChat(const QString &peerId) {
     m_currentPeerUserId = peerId;
     m_ui->messageView->clear();
     m_ui->stackWidget->setCurrentWidget(m_ui->chatPage);
+
+    for (int i = 0; i < m_ui->listWidget->count(); ++i) {
+        auto *it = m_ui->listWidget->item(i);
+        if (it && it->data(Qt::UserRole).toString() == peerId) {
+            m_ui->listWidget->setCurrentItem(it);
+            break;
+        }
+    }
 }
 
 void MainWindow::addChatIfMissing(const UserSearchResult &u) {
