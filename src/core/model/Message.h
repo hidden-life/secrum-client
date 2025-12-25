@@ -15,8 +15,12 @@ enum class MessageStatus {
 struct Message {
     QString id;
     QString peerUserId;
+    QString peerDeviceId;
     QString plainText;
     QString cipherText;
+
+    QString senderDeviceId;
+    QString senderPubKeyB64;
 
     bool isOutgoing = true;
     MessageStatus status = MessageStatus::Sending;

@@ -1,6 +1,7 @@
 #ifndef APP_APPLICATION_H
 #define APP_APPLICATION_H
 
+#include "core/crypto/KeyService.h"
 #include "core/device/DeviceService.h"
 #include "core/network/ConnectivityService.h"
 #include "core/network/WSClient.h"
@@ -32,6 +33,8 @@ private:
     MainWindow *m_mainWindow = nullptr;
     AuthController *m_authController;
     DeviceService *m_deviceService;
+
+    KeyService *m_keyService = nullptr;
 
     ConnectivityService *m_connectivity = nullptr;
 

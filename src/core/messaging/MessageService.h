@@ -12,7 +12,7 @@ class MessageService final : public QObject {
     Q_OBJECT
 public:
     explicit MessageService(WSClient *wsClient, QObject *parent = nullptr);
-    void sendMessage(const QString &peerUserId, const QString &text);
+    void sendMessage(const QString &peerUserId, const QString &peerDeviceId, const QString &text);
     void markDelivered(const QString &msgId);
     void markRead(const QString &msgId);
     void loadHistory(const QString &peerUserId, int limit = 50);
@@ -32,6 +32,12 @@ private:
     HttpClient *m_httpClient;
     HttpClient *m_historyHttpClient;
     QString m_historyPeerId;
+
+    QString m_pendingPeerUserId;
+    QString m_pendingPeerDeviceId;
+    QString m_pendingPlainText;
+    QString m_pendingMessageId;
+    std::function<void()> m_pendingAfterBundle = nullptr;
 
     void handleIncoming(const QString &type, const QJsonObject &json);
 

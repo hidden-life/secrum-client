@@ -4,6 +4,7 @@
 
 #include "core/auth/AuthSession.h"
 #include "core/crypto/CryptoService.h"
+#include "core/crypto/KeyService.h"
 
 MessageService::MessageService(WSClient *wsClient, QObject *parent) :
         QObject(parent),
@@ -20,29 +21,111 @@ MessageService::MessageService(WSClient *wsClient, QObject *parent) :
 
     connect(m_historyHttpClient, &HttpClient::success, this, &MessageService::onHistoryHttpSuccess);
     connect(m_historyHttpClient, &HttpClient::error, this, &MessageService::onHistoryHttpError);
+
+    connect(&KeyService::instance(), &KeyService::bundleLoaded, this, [this](const QString &userId, const QJsonObject &bundle) {
+        if (userId != m_pendingPeerUserId) return;
+
+        const QJsonArray devices = bundle.value("devices").toArray();
+        if (devices.isEmpty()) {
+            emit messageFailed(m_pendingMessageId, "No devices in bundle.");
+            return;
+        }
+
+        const QJsonObject dev = devices.first().toObject();
+        const QString deviceId = dev.value("device_id").toString();
+        if (deviceId.isEmpty()) {
+            emit messageFailed(m_pendingMessageId, "Bundle device_id is missing");
+            return;
+        }
+
+        m_pendingPeerDeviceId = deviceId;
+
+        if (!CryptoService::instance().ensureSession(m_pendingPeerUserId, deviceId, dev)) {
+            emit messageFailed(m_pendingMessageId, "Failed to init crypto session");
+            return;
+        }
+
+        if (m_pendingAfterBundle) {
+            m_pendingAfterBundle();
+            m_pendingAfterBundle = nullptr;
+        }
+    }, Qt::QueuedConnection);
+
+    connect(&KeyService::instance(), &KeyService::bundleFailed, this, [this](const QString &userId, const QString &err) {
+        if (userId == m_pendingPeerUserId) {
+            emit messageFailed(m_pendingMessageId, "Bundle failed: " + err);
+        }
+    }, Qt::QueuedConnection);
 }
 
-void MessageService::sendMessage(const QString &peerUserId, const QString &text) {
+void MessageService::sendMessage(const QString &peerUserId, const QString &peerDeviceId, const QString &text) {
+    if (peerUserId.isEmpty() || text.isEmpty()) {
+        return;
+    }
+
+    // create local message
     Message msg;
     msg.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
     msg.peerUserId = peerUserId;
     msg.plainText = text;
-    msg.status = MessageStatus::Sending;
     msg.isOutgoing = true;
+    msg.status = MessageStatus::Sending;
     msg.createdAt = QDateTime::currentDateTimeUtc();
 
-    const QString uid = AuthSession::instance().userId();
-    msg.cipherText = CryptoService::instance().encryptForChat(uid, peerUserId, text);
-
     m_messages[msg.id] = msg;
+    emit messageAdded(msg);
 
-    emit messageAdded(msg); // show in UI
+    // save pending-context
+    m_pendingMessageId = msg.id;
+    m_pendingPeerUserId = peerUserId;
+    m_pendingPeerDeviceId = peerDeviceId;
+    m_pendingPlainText = text;
 
-    QJsonObject body;
-    body["recipient_user_id"] = peerUserId;
-    body["cipher_text"] = msg.cipherText;
-    qDebug() << "[MessageService] POST /messages/send" << body;
-    m_httpClient->post("/messages/send", body);
+    auto encryptAndSend = [this]() {
+        if (m_pendingPeerDeviceId.isEmpty()) {
+            emit messageFailed(m_pendingMessageId, "peer device id is empty");
+            return;
+        }
+
+        EncryptResult enc = CryptoService::instance().encryptToDevice(m_pendingPeerUserId, m_pendingPeerDeviceId, m_pendingPlainText);
+        if (enc.cipherTextB64.isEmpty() || enc.pubKeyB64.isEmpty()) {
+            emit messageFailed(m_pendingMessageId, "encryptio failed");
+            return;
+        }
+
+        // update local cipher text
+        if (m_messages.contains(m_pendingMessageId)) {
+            Message &m = m_messages[m_pendingMessageId];
+            m.cipherText = enc.cipherTextB64;
+            emit messageUpdated(m);
+        }
+
+        QJsonObject body;
+        body["recipient_user_id"] = m_pendingPeerUserId;
+        body["recipient_device_id"] = m_pendingPeerDeviceId;
+        body["cipher_text"] = enc.cipherTextB64;
+        body["pub_key"] = enc.pubKeyB64;
+        if (enc.x3dhOtpId.has_value()) {
+            body["x3dh_otpk_id"] = enc.x3dhOtpId.value();
+        }
+
+        qDebug() << "[MessageService] POST /messages/send" << body;
+
+        m_httpClient->post("/messages/send", body);
+    };
+
+    // if session is ready - encrypt/send
+    if (!peerDeviceId.isEmpty()) {
+        if (CryptoService::instance().ensureSession(peerUserId, peerDeviceId, QJsonObject())) {
+            encryptAndSend();
+            return;
+        }
+    }
+
+    // otherwise fetch bundle and create session
+    KeyService::instance().fetchBundle(peerUserId);
+
+    m_pendingAfterBundle = encryptAndSend;
 }
 
 void MessageService::markDelivered(const QString &msgId) {
@@ -112,7 +195,16 @@ void MessageService::handleIncoming(const QString &type, const QJsonObject &json
         msg.createdAt = QDateTime::fromString(json["created_at"].toString(), Qt::ISODate);
 
         const QString uid = AuthSession::instance().userId();
-        msg.plainText = CryptoService::instance().decryptForChat(uid, msg.peerUserId, msg.cipherText);
+        if (!CryptoService::instance().ensureSession(msg.peerUserId, json["sender_device_id"].toString(), nullptr)) {
+            emit messageFailed(msg.id, "Session failed on handle incoming.");
+            return;
+        }
+        msg.plainText = CryptoService::instance().decryptFromDevice(
+            msg.peerUserId,
+            json["sender_device_id"].toString(),
+            json["pub_key"].toString(),
+            msg.cipherText
+            );
 
         m_messages[msg.id] = msg;
 
@@ -216,7 +308,17 @@ void MessageService::onHistoryHttpSuccess(const QJsonDocument &doc) {
 
         // decrypt
         if (!msg.cipherText.isEmpty()) {
-            msg.plainText = CryptoService::instance().decryptForChat(currentUid, msg.peerUserId, msg.cipherText);
+            const QString senderDeviceId = o.value("sender_Device_id").toString();
+            if (!CryptoService::instance().ensureSession(msg.peerUserId, senderDeviceId, QJsonObject())) {
+                emit messageFailed(msg.id, "Session not active on handling history.");
+                return;
+            }
+            msg.plainText = CryptoService::instance().decryptFromDevice(
+                msg.peerUserId,
+                senderDeviceId,
+                o.value("pub_key").toString(),
+                msg.cipherText
+                );
         }
 
         m_messages[msg.id] = msg;

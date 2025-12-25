@@ -17,6 +17,8 @@ SQLiteStorage::SQLiteStorage() {
 
     QSqlQuery q;
     q.exec(R"(CREATE TABLE IF NOT EXISTS client_state (key TEXT PRIMARY KEY, value TEXT))");
+    q.exec(R"(CREATE TABLE IF NOT EXISTS device_keys (key TEXT PRIMARY KEY, value TEXT NOT NULL))");
+    q.exec(R"(CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, state_json TEXT NOT NULL, updated_at INTEGER NOT NULL))");
 }
 
 QString SQLiteStorage::get(const QString &key) {

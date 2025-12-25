@@ -77,6 +77,16 @@ int Application::start(int argc, char **argv) {
         showLoginWindow();
     }
 
+    m_keyService = new KeyService(this);
+
+    connect(m_keyService->httpClient(), &HttpClient::success, this, [this](const QJsonDocument &doc) {
+        emit m_keyService->bundleLoaded(doc);
+    });
+
+    connect(m_keyService->httpClient(), &HttpClient::error, this, [this](const QString &err) {
+        emit m_keyService->bundleFailed(err);
+    });
+
     return app.exec();
 }
 
